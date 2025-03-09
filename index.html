@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Студенти - CMS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="logo">CMS</div>
+            <div class="user">James Bond</div>
+        </nav>
+    </header>
+    <main>
+        <div class="sidebar">           
+            <a href="#">Dashboard</a>
+            <a href="#">Students</a>
+            <a href="#">Tasks</a>      
+        </div>
+        <section class="content">
+            <h1>Students</h1>
+            <table>
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>Group</th>
+                        <th>Name</th>
+                        <th>Gender</th>
+                        <th>Birthday</th>
+                        <th>Status</th>
+                        <th>Options</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="checkbox" checked></td>
+                        <td>KN-21</td>
+                        <td>John Smith</td>
+                        <td>M</td>
+                        <td>11.05.2004</td>
+                        <td><span class="status active"></span></td>
+                        <td>
+                            <button class="edit">✏️</button>
+                            <button class="delete">✖</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox"></td>
+                        <td>KN-22</td>
+                        <td>Ann Bond</td>
+                        <td>F</td>
+                        <td>24.04.2004</td>
+                        <td><span class="status inactive"></span></td>
+                        <td>
+                            <button class="edit">✏️</button>
+                            <button class="delete">✖</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button class="add">+</button>
+        </section>
+    </main>
+</body>
+</html>

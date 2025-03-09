@@ -1,0 +1,134 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+body {
+    background-color: #f5f5f5;
+    line-height: 1.6;
+}
+
+header {
+    background-color: #666;
+    color: white;
+    padding: 10px 0;
+    /* margin-bottom: 20px; */
+}
+
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.user {
+    font-size: 16px;
+}
+
+.sidebar {
+    height: 100%;
+    width: 10%;
+    position: fixed;
+    display: left;
+    overflow-x: hidden;
+    background-color: #fff;
+    padding: 10px 0;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+.sidebar a {
+    padding: 6px 8px 6px 16px;
+    text-decoration: none;
+    font-size: 25px;
+    color: #2b2929;
+    display: block;
+}
+
+.sidebar a:hover {
+    color: #8486fa;
+}
+
+.content {
+    margin-left: 10%;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+table {
+    width: 80%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.status {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin: 0 5px;
+}
+
+.status.active {
+    background-color: #4CAF50;
+}
+
+.status.inactive {
+    background-color: #ccc;
+}
+
+button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    margin: 0 5px;
+}
+
+.edit {
+    color: #2196F3;
+}
+
+.delete {
+    color: #F44336;
+}
+
+.add {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: #2196F3;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
