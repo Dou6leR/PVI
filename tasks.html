@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<head>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="left_header">
+                <div class="logo"><a href="students.html">CMS</a></div>
+            </div>
+            <div class="right_header">
+                <div class="bell" ondblclick="toggleBellAnimation()">
+                    <img class="bell_icon" src="\src\bell.png"></img>
+                    <div class="dropdown_messages">Message1<br>Message2</div>
+                </div>
+                <div class="user">
+                    <div class="user_block">
+                    <img class="user_icon" src="\src\user.png"></img>
+                    <div class="username">James Bond</div>
+                    </div>
+                    <div class="dropdown_user">Log in<br>Sign out</div>
+                </div>      
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="sidebar">           
+            <a href="dashboard.html">Dashboard</a>
+            <a href="students.html">Students</a>
+            <a href="tasks.html" class="active_page">Tasks</a>        
+        </div>
+    </main>
+    <script type="text/javascript" src="app.js"></script>
+</body>
+</html>
