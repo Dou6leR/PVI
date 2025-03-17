@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="PVI labs" />
+    <link rel="stylesheet" href="students.css" />
+    <link rel="stylesheet" href="../main.css" />
+    <title>Riznyk Rostyslav</title>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="left_header">
+                <div class="burger-menu">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+                <div class="logo"><a href="students.html">CMS</a></div>
+            </div>
+            <div class="right_header">
+                <div class="bell">
+                    <div class="bell_badge">
+                        <a href="../messages_page/messages.html">
+                            <img class="bell_icon" alt="Bell_icon" oncontextmenu="toggleBellAnimation()" src="/src/bell.png" />
+                        </a>
+                        <span class="badge"></span>
+                    </div>
+                    <div class="dropdown_messages">
+                        <div class="message">
+                            <img class="user_icon" alt="User_icon" src="/src/user.png" />
+                            <div class="message_text">
+                                <p>John Smith:</p>
+                                <p>Message</p>
+                            </div>
+                        </div>
+                        <div class="message">
+                            <img class="user_icon" alt="User_icon" src="/src/user.png" />
+                            <div class="message_text">
+                                <p>Ann Bond:</p>
+                                <p>Message</p>
+                            </div>
+                        </div>
+                        <div class="message">
+                            <img class="user_icon" alt="User_icon" src="/src/user.png" />
+                            <div class="message_text">
+                                <p>John Smith:</p>
+                                <p>Message</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="user">
+                    <div class="user_block">
+                    <img class="user_icon" alt="User_icon" src="/src/user.png" />
+                    <div class="username">John Smith</div>
+                    </div>
+                    <div class="dropdown_user">Profile<br>Sign out</div>
+                </div>      
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="sidebar">           
+            <a href="../dashboard_page/dashboard.html">Dashboard</a>
+            <a href="students.html" class="active_page">Students</a>
+            <a href="../tasks_page/tasks.html">Tasks</a>      
+        </div>
+        <section class="content">
+            <h1>Students</h1>
+            <button class="add">+</button>
+            <div class="div_table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox"
+                                id="select_all"
+                                name="select_all"
+                                value="select_all"
+                                />
+                                <label for="select_all">Select all</label>
+                            </th>
+                            <th>Group</th>
+                            <th>Name</th>
+                            <th>Gender</th>
+                            <th>Birthday</th>
+                            <th>Status</th>
+                            <th>Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><input type="checkbox" checked
+                                id="select1"
+                                name="select1"
+                                value="select1"
+                                />
+                                <label for="select1">1</label>
+                            </td>
+                            <td>PZ-21</td>
+                            <td>John Smith</td>
+                            <td>M</td>
+                            <td>11.05.2004</td>
+                            <td><span class="status active"></span></td>
+                            <td>
+                                <button class="edit">✏️</button>
+                                <button class="delete">✖</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><input type="checkbox"
+                                id="select2"
+                                name="select2"
+                                value="select2"
+                                />
+                                <label for="select2">2</label>
+                            </td>
+                            <td>PZ-22</td>
+                            <td>Ann Bond</td>
+                            <td>F</td>
+                            <td>24.04.2004</td>
+                            <td><span class="status inactive"></span></td>
+                            <td>
+                                <button class="edit">✏️</button>
+                                <button class="delete">✖</button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>  
+            </div>    
+            <div class="pagination">
+                <button>&lt;</button>
+                <button>1</button>
+                <button>2</button>
+                <button>3</button>
+                <button>4</button>
+                <button>&gt;</button>
+            </div>
+        </section>
+        <div id="create" class="modal_create">
+            <div class="form_create">
+                <span class="close">&times;</span>
+                <h2 class="form_h2">Add Student</h2>  
+                <form>              
+                    <div class="form">
+                        <label for="group">Group:</label>
+                        <select name="group" id="group"> 
+                            <option value="PZ-21">PZ-21</option>
+                            <option value="PZ-22">PZ-22</option>
+                            <option value="KI-204">KI-204</option>
+                            <option value="SA-21">SA-21</option>
+                        </select><br> 
+                        <label for="fname">First name:</label>
+                        <input type="text" id="fname" name="fname"><br>
+                        <label for="lname">Last name:</label>
+                        <input type="text" id="lname" name="lname"><br>
+                        <label for="gender">Gender:</label>
+                        <select name="gender" id="gender"> 
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select><br>
+                        <label for="birthday">Birthday:</label>
+                        <input type="date" id="birthday" name="birthday"><br>
+                    </div>
+                    <button class="submit_button">Rename</button>
+                    <button class="close">Cancel</button>
+                </form>
+            </div>
+        </div>
+        <div id="delete_confirm" class="modal_delete">         
+            <div class="delete_accept">
+                <span class="close_delete">&times;</span>
+                <h2>Warning</h2>
+                <div class="delete_user">
+                    <p>Are you sure you want to delete: <span class="student_to_delete"></span></p>
+
+                </div>
+                <button class="submit_button_delete">Ok</button>
+                <button class="close_button_delete">Cancel</button>
+            </div>    
+        </div>
+    </main>
+    <script type="text/javascript" src="../app.js"></script>
+    <script type="text/javascript" src="students.js"></script>
+
+</body>
+</html>

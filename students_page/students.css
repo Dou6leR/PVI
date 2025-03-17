@@ -1,0 +1,239 @@
+.content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background-color: #fff;
+    padding: 30px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.1);
+}
+
+h1 {
+    font-size: 24px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.div_table {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 2px solid #ddd;
+}
+
+th {
+    background-color: #f5f5f5;
+    font-weight: bold;
+}
+
+.status {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+}
+
+.status.active {
+    background-color: #4CAF50;
+}
+
+.status.inactive {
+    background-color: #ccc;
+}
+
+button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    margin: 0 5px;
+}
+
+.edit {
+    font-size: 18px;
+    background-color: white;
+    color: #000000;
+}
+
+.delete {
+    font-size: 18px;
+    background-color: white;
+    color: #000000;
+}
+
+.add {
+    margin: 10px;
+    align-self: flex-end;
+    background-color: #000000;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.pagination {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.modal_create {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+.form_create {
+    background-color: #fefefe;
+    margin: 60px auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 300px;
+    height: 500px;
+    border-radius: 10px;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.close:hover, .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.form {
+    border-bottom: 2px solid #ddd;
+    border-top: 2px solid #ddd;
+}
+
+h2{
+    padding: 20px;
+}
+
+.form label {
+    display: inline-block;
+    font-size: 16px;
+    min-width: 100px;
+    padding: 25px 10px;
+}
+
+.form input {
+    display: inline-block;
+    font-size: 16px;
+    width: 150px;
+    padding: 8px 4px;
+}
+
+.form select {
+    display: inline-block;
+    font-size: 16px;
+    width: 150px;
+    padding: 8px 4px;
+}
+.submit_button {
+    color: #aaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.submit_button:hover, .submit_button:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+.modal_delete {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgb(0,0,0);
+    background-color: rgba(0,0,0,0.4);
+}
+
+.delete_accept {
+    background-color: #fefefe;
+    margin: 60px auto;
+    padding: 20px;
+    width: 300px;   
+    height: 300px;
+    border-radius: 10px;
+}
+
+.delete_user {
+    margin-top: auto;
+    padding: 15.5% 0;
+    justify-content: center;
+    border-bottom: 2px solid #ddd;
+    border-top: 2px solid #ddd;
+}
+
+.delete_accept p {
+    text-align: center;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.close_delete {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close_delete:hover, .close_delete:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.close_button_delete {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.close_button_delete:hover, .close_button_delete:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+    bottom: 0;
+}
+
+.submit_button_delete {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+}
+
+.submit_button_delete:hover, .submit_button_delete:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+}
