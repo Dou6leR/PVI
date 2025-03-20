@@ -15,11 +15,12 @@ const ASSETS = [
     "/PVI/index.html",
     "/PVI/main.css",
     "/PVI/app.js",
-    "/service-worker.js",
+    "/PVI/service-worker.js",
     "/PVI/pwa/init_sw.js",
     "/PVI/pwa/manifest.json",
     "/PVI/src/bell.png",
-    "/PVI/icons/user.png"
+    "/PVI/src/user.png",
+    "/PVI/src/icon.png"
 ];
 
 // Встановлення Service Worker та кешування файлів
