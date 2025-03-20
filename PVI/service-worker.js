@@ -25,35 +25,37 @@ const ASSETS = [
 // Встановлення Service Worker та кешування файлів
 self.addEventListener("install", (event) => {
     event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-    return cache.addAll(ASSETS);
+        caches.open(CACHE_NAME).then((cache) => {
+        console.log('Caching files');
+            return cache.addAll(ASSETS);
     })
-);
+    ); 
 });
 
 // Перехоплення запитів і завантаження з кешу
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', event => {
     event.respondWith(
-    caches.match(event.request).then((response) => {
-    return response || fetch(event.request);
-    })
-);
+    caches.match(event.request)
+        .then(response => response || fetch(event.request))
+        .catch(() => caches.match('/offline.html'))
+    );
 });
 
 // Оновлення Service Worker і видалення старого кешу
 self.addEventListener("activate", (event) => {
+    console.log('Updating cache');
     event.waitUntil(
-    caches
-    .keys()
-    .then((keys) => {
+        caches
+        .keys()
+        .then((keys) => {
         return Promise.all(
             keys
             .filter((key) => key !== CACHE_NAME)
             .map((key) => caches.delete(key))
-        );
-    })
-    .then(() => {
-        return self.clients.claim(); // Підключаємо новий SW до всіх вкладок
-    })
-);
+            );
+        })
+        .then(() => {
+          return self.clients.claim(); // Підключаємо новий SW до всіх вкладок
+        })
+    );
 });
