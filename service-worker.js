@@ -15,7 +15,7 @@ const ASSETS = [
     "/PVI/index.html",
     "/PVI/main.css",
     "/PVI/app.js",
-    "/PVI/service-worker.js",
+    "/service-worker.js",
     "/PVI/pwa/init_sw.js",
     "/PVI/pwa/manifest.json",
     "/PVI/src/bell.png",
