@@ -1,0 +1,8 @@
+// {
+//     "liveServer.settings.https": {
+//     "enable": true,
+//     "cert": "C:/Program Files/MySSL/localhost.pem",
+//     "key": "C:/Program Files/MySSL/localhost.key",
+//     "passphrase": "1234"
+//     }
+// }
