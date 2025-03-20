@@ -3,7 +3,7 @@
     "short_name": "PWA App",
     "description": "CMS",
     "id": "/PVI/students_page/students.html",
-    "start_url": "/PVI/",
+    "start_url": "/PVI/students_page/students.html",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#000000",
