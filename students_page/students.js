@@ -23,7 +23,7 @@ function bindEditHandler(btn) {
             return;
         }
         form_h2.textContent = "Edit Student";
-        submit_button.textContent = "Save";
+        submit_button.value = "Save";
         modal_create.style.display = "block";
         currentMode = 'edit';
         
@@ -109,15 +109,81 @@ bodyCheckboxes.forEach(bindCheckboxHandler);
 
 btn_add.onclick = function() {
     form_h2.textContent = "Add Student";
-    submit_button.textContent = "Create";
+    submit_button.value = "Create";
     modal_create.style.display = "block";
     currentMode = 'add';
     document.querySelector('form').reset();
 };
 
+function validateForm() {
+    const group = document.getElementById('group').value;
+    const fname = document.getElementById('fname');
+    const lname = document.getElementById('lname');
+    const gender = document.getElementById('gender').value;
+    const birthday = document.getElementById('birthday');
+    
+    const nameRegex = /^[A-Za-zА-Яа-я]{2,}$/;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    
+    let isValid = true;
+    
+    [fname, lname, birthday].forEach(input => {
+        input.classList.remove('error');
+        const errorSpan = input.nextElementSibling;
+        if (errorSpan && errorSpan.className === 'error-message') {
+            errorSpan.remove();
+        }
+    });
+
+    if (!nameRegex.test(fname.value)) {
+        showError(fname, 'First name must be at least 2 only letters');
+        isValid = false;
+    }
+    
+    if (!nameRegex.test(lname.value)) {
+        showError(lname, 'Last name must be at least 2 only letters');
+        isValid = false;
+    }
+    
+    if (!dateRegex.test(birthday.value) || !isValidDate(birthday.value)) {
+        showError(birthday, 'Enter a valid date (age must be 16-100)');
+        isValid = false;
+    }
+    
+    const form = document.querySelector('form');
+    if (!form.checkValidity()) {
+        isValid = false;
+    }
+
+    return isValid;
+}
+
+function isValidDate(dateString) {
+    const date = new Date(dateString);
+    const today = new Date();
+    const age = today.getFullYear() - date.getFullYear();
+    return age >= 16 && age <= 100 && date <= today;
+}
+
+function showError(input, message) {
+    input.classList.add('error');
+    const errorSpan = document.createElement('span');
+    errorSpan.className = 'error-message';
+    errorSpan.textContent = message;
+    const existingError = input.nextElementSibling;
+    if (existingError && existingError.className === 'error-message') {
+        existingError.remove();
+    }
+
+    input.parentNode.insertBefore(errorSpan, input.nextSibling);
+}
 
 submit_button.onclick = function(event) {
     event.preventDefault();
+
+    if (!validateForm()) {
+        return;
+    }
 
     let group = document.getElementById('group').value;
     let fname = document.getElementById('fname').value;
@@ -127,12 +193,19 @@ submit_button.onclick = function(event) {
 
     let birthdayFormatted = birthday.split('-').reverse().join('.');
 
-    if (!group || !fname || !lname || !gender || !birthday) {
-        alert('Please fill in all fields!');
-        return;
-    }
+    
+    
     if (currentMode === 'add') {
         count++;
+        const studentData = {
+            id: count,
+            group : group,
+            firstName: fname,
+            lastName: lname,
+            gender : gender,
+            birthday: birthdayFormatted,
+        };
+        console.log(JSON.stringify(studentData, null, 2));
         var newRow = document.createElement('tr');
         newRow.innerHTML = `
             <td><input type="checkbox" checked
@@ -162,11 +235,23 @@ submit_button.onclick = function(event) {
     } else if (currentMode === 'edit' && currentRow) {
 
         var cells = currentRow.getElementsByTagName('td');
+        const checkbox = cells[0].querySelector('input[type="checkbox"]');
+        const idNumber = parseInt(checkbox.id.replace('select', ''));
         cells[1].textContent = group;
         cells[2].textContent = `${fname} ${lname}`;
         cells[3].textContent = gender === 'Male' ? 'M' : gender === 'Female' ? 'F' : 'O';
         cells[4].textContent = birthdayFormatted;
+        const studentData = {
+            id: idNumber,
+            group : group,
+            firstName: fname,
+            lastName: lname,
+            gender : gender,
+            birthday: birthdayFormatted,
+        };
+        console.log(JSON.stringify(studentData, null, 2));
     }
+    
     modal_create.style.display = "none";
 };
 

@@ -146,26 +146,26 @@
                 <form>              
                     <div class="form">
                         <label for="group">Group:</label>
-                        <select name="group" id="group"> 
+                        <select name="group" id="group" > 
                             <option value="PZ-21">PZ-21</option>
                             <option value="PZ-22">PZ-22</option>
                             <option value="KI-204">KI-204</option>
                             <option value="SA-21">SA-21</option>
                         </select><br> 
                         <label for="fname">First name:</label>
-                        <input type="text" id="fname" name="fname"><br>
+                        <input type="text" id="fname" name="fname" pattern="[A-Za-zА-Яа-я]{2,}" title="At least 2 only letters"><br>
                         <label for="lname">Last name:</label>
-                        <input type="text" id="lname" name="lname"><br>
+                        <input type="text" id="lname" name="lname" pattern="[A-Za-zА-Яа-я]{2,}" title="At least 2 only letters"><br>
                         <label for="gender">Gender:</label>
-                        <select name="gender" id="gender"> 
+                        <select name="gender" id="gender" > 
                             <option value="Male">Male</option>
                             <option value="Female">Female</option>
                             <option value="Other">Other</option>
                         </select><br>
                         <label for="birthday">Birthday:</label>
-                        <input type="date" id="birthday" name="birthday"><br>
+                        <input type="date" id="birthday" name="birthday" title="Age between 16-100 years"><br>
                     </div>
-                    <button class="submit_button">Rename</button>
+                    <input type="submit" class="submit_button" value="Ok">
                     <button class="close">Cancel</button>
                 </form>
             </div>
