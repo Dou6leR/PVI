@@ -185,6 +185,17 @@ nav {
     font-size: 20px;
     margin: auto;
 }
+.profile, .sign_out{
+    font-size: 18px;
+}
+
+.profile:hover  {  
+    color: #8486fa;
+}
+
+.sign_out:hover {  
+    color: #8486fa;
+}
 
 @media only screen and (max-width: 600px) {
     .username {

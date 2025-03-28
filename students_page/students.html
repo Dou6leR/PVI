@@ -6,7 +6,7 @@
     <meta name="description" content="PVI labs" />
     <link rel="stylesheet" href="students.css" />
     <link rel="stylesheet" href="../main.css" />
-    <link rel="manifest" href="../pwa/manifest.json">
+    <!-- <link rel="manifest" href="../pwa/manifest.json"> -->
     <title>Riznyk Rostyslav</title>
 </head>
 <body>
@@ -55,9 +55,12 @@
                 <div class="user">
                     <div class="user_block">
                     <img class="user_icon" alt="User_icon" src="../src/user.png" />
-                    <div class="username">John Smith</div>
+                    <div class="username">Username</div>
                     </div>
-                    <div class="dropdown_user">Profile<br>Sign out</div>
+                    <div class="dropdown_user">
+                        <button class="profile">Profile</button><br>
+                        <button class="sign_out">Sign out</button>
+                    </div>
                 </div>      
             </div>
         </nav>
@@ -91,42 +94,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><input type="checkbox" checked
-                                id="select1"
-                                name="select1"
-                                value="select1"
-                                />
-                                <label for="select1">1</label>
-                            </td>
-                            <td>PZ-21</td>
-                            <td>John Smith</td>
-                            <td>M</td>
-                            <td>11.05.2004</td>
-                            <td><span class="status active"></span></td>
-                            <td>
-                                <button class="edit">✏️</button>
-                                <button class="delete">✖</button>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><input type="checkbox"
-                                id="select2"
-                                name="select2"
-                                value="select2"
-                                />
-                                <label for="select2">2</label>
-                            </td>
-                            <td>PZ-22</td>
-                            <td>Ann Bond</td>
-                            <td>F</td>
-                            <td>24.04.2004</td>
-                            <td><span class="status inactive"></span></td>
-                            <td>
-                                <button class="edit">✏️</button>
-                                <button class="delete">✖</button>
-                            </td>
-                        </tr>
                     </tbody>
                 </table>  
             </div>    
@@ -185,6 +152,6 @@
     </main>
     <script type="text/javascript" src="../app.js"></script>
     <script type="text/javascript" src="students.js"></script>
-    <script type="text/javascript" src="../pwa/init_sw.js"></script>
+    <!-- <script type="text/javascript" src="../pwa/init_sw.js"></script> -->
 </body>
 </html>

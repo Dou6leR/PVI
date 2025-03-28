@@ -1,62 +1,62 @@
-const CACHE_NAME = "pwa-cache-v1";
-const ASSETS = [
-    "/PVI/students_page/students.html",
-    "/PVI/students_page/students.css",
-    "/PVI/students_page/students.js",
-    "/PVI/dashboard_page/dashboard.html",
-    //"/PVI/dashboard_page/dashboard.css",
-    //"/PVI/dashboard_page/dashboard.js",
-    "/PVI/messages_page/messages.html",
-    //"/PVI/messages_page/messages.css",
-    //"/PVI/messages_page/messages.js",
-    "/PVI/tasks_page/tasks.html",
-    //"/PVI/tasks_page/tasks.css",
-    //"/PVI/tasks_page/tasks.js",
-    "/PVI/index.html",
-    "/PVI/main.css",
-    "/PVI/app.js",
-    "/PVI/service-worker.js",
-    "/PVI/pwa/init_sw.js",
-    "/PVI/pwa/manifest.json",
-    "/PVI/src/bell.png",
-    "/PVI/src/user.png",
-    "/PVI/src/icon.png"
-];
+// const CACHE_NAME = "pwa-cache-v1";
+// const ASSETS = [
+//     "/PVI/students_page/students.html",
+//     "/PVI/students_page/students.css",
+//     "/PVI/students_page/students.js",
+//     "/PVI/dashboard_page/dashboard.html",
+//     //"/PVI/dashboard_page/dashboard.css",
+//     //"/PVI/dashboard_page/dashboard.js",
+//     "/PVI/messages_page/messages.html",
+//     //"/PVI/messages_page/messages.css",
+//     //"/PVI/messages_page/messages.js",
+//     "/PVI/tasks_page/tasks.html",
+//     //"/PVI/tasks_page/tasks.css",
+//     //"/PVI/tasks_page/tasks.js",
+//     "/PVI/index.html",
+//     "/PVI/main.css",
+//     "/PVI/app.js",
+//     "/PVI/service-worker.js",
+//     "/PVI/pwa/init_sw.js",
+//     "/PVI/pwa/manifest.json",
+//     "/PVI/src/bell.png",
+//     "/PVI/src/user.png",
+//     "/PVI/src/icon.png"
+// ];
 
-// Встановлення Service Worker та кешування файлів
-self.addEventListener("install", (event) => {
-    event.waitUntil(
-        caches.open(CACHE_NAME).then((cache) => {
-        console.log('Caching files');
-            return cache.addAll(ASSETS);
-    })
-    ); 
-});
+// // Встановлення Service Worker та кешування файлів
+// self.addEventListener("install", (event) => {
+//     event.waitUntil(
+//         caches.open(CACHE_NAME).then((cache) => {
+//         console.log('Caching files');
+//             return cache.addAll(ASSETS);
+//     })
+//     ); 
+// });
 
-// Перехоплення запитів і завантаження з кешу
-self.addEventListener('fetch', event => {
-    event.respondWith(
-    caches.match(event.request)
-        .then(response => response || fetch(event.request))
-        .catch(() => caches.match('/index.html'))
-    );
-});
+// // Перехоплення запитів і завантаження з кешу
+// self.addEventListener('fetch', event => {
+//     event.respondWith(
+//     caches.match(event.request)
+//         .then(response => response || fetch(event.request))
+//         .catch(() => caches.match('/index.html'))
+//     );
+// });
 
-// Оновлення Service Worker і видалення старого кешу
-self.addEventListener("activate", (event) => {
-    console.log('Updating cache');
-    event.waitUntil(
-        caches
-        .keys()
-        .then((keys) => {
-        return Promise.all(
-            keys
-            .filter((key) => key !== CACHE_NAME)
-            .map((key) => caches.delete(key))
-            );
-        })
-        .then(() => {
-          return self.clients.claim(); // Підключаємо новий SW до всіх вкладок
-        })
-    );
-});
+// // Оновлення Service Worker і видалення старого кешу
+// self.addEventListener("activate", (event) => {
+//     console.log('Updating cache');
+//     event.waitUntil(
+//         caches
+//         .keys()
+//         .then((keys) => {
+//         return Promise.all(
+//             keys
+//             .filter((key) => key !== CACHE_NAME)
+//             .map((key) => caches.delete(key))
+//             );
+//         })
+//         .then(() => {
+//           return self.clients.claim(); // Підключаємо новий SW до всіх вкладок
+//         })
+//     );
+// });

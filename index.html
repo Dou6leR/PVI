@@ -4,72 +4,41 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="PVI labs" />
-    <meta http-equiv="refresh" content="0; url=https://dou6ler.github.io/PVI/students_page/students.html" />
+    <!-- <meta http-equiv="refresh" content="0; url=https://dou6ler.github.io/PVI/students_page/students.html" /> -->
     <link rel="stylesheet" href="main.css" />
-    <link rel="manifest" href="./pwa/manifest.json">
-    <title>Riznyk Rostyslav</title>
+    <link rel ="stylesheet" href="login.css" />
+    <!-- <link rel="manifest" href="./pwa/manifest.json"> -->
+    <title>Riznyk Rostyslav - Login</title>
 </head>
 <body>
     <header>
         <nav>
             <div class="left_header">
-                <div class="burger-menu">
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                    <div class="bar"></div>
-                </div>
                 <div class="logo"><a href="/students_page/students.html">CMS</a></div>
-            </div>
-            <div class="right_header">
-                <div class="bell">
-                    <div class="bell_badge">
-                        <a href="../messages_page/messages.html">
-                            <img class="bell_icon" alt="Bell_icon" oncontextmenu="toggleBellAnimation()" src="./src/bell.png" />
-                        </a>
-                        <span class="badge"></span>
-                    </div>
-                    <div class="dropdown_messages">
-                        <div class="message">
-                            <img class="user_icon" alt="User_icon" src="./src/user.png" />
-                            <div class="message_text">
-                                <p>John Smith:</p>
-                                <p>Message</p>
-                            </div>
-                        </div>
-                        <div class="message">
-                            <img class="user_icon" alt="User_icon" src="./src/user.png" />
-                            <div class="message_text">
-                                <p>Ann Bond:</p>
-                                <p>Message</p>
-                            </div>
-                        </div>
-                        <div class="message">
-                            <img class="user_icon" alt="User_icon" src="./src/user.png" />
-                            <div class="message_text">
-                                <p>John Smith:</p>
-                                <p>Message</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="user">
-                    <div class="user_block">
-                    <img class="user_icon" alt="User_icon" src="./src/user.png" />
-                    <div class="username">John Smith</div>
-                    </div>
-                    <div class="dropdown_user">Profile<br>Sign out</div>
-                </div>      
             </div>
         </nav>
     </header>
     <main>
-        <div class="sidebar">           
-            <a href="./dashboard_page/dashboard.html" class="active_page">Dashboard</a>
-            <a href="./students_page/students.html">Students</a>
-            <a href="./tasks_page/tasks.html">Tasks</a>      
+        <div class="login-container">
+            <form class="login-form" id="loginForm">
+                <h2>Login to CMS</h2>
+                <div class="form-group">
+                    <label for="firstName">First Name:</label>
+                    <input type="text" id="firstName" name="firstName" required />
+                </div>
+                <div class="form-group">
+                    <label for="lastName">Last Name:</label>
+                    <input type="text" id="lastName" name="lastName" required />
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required />
+                </div>
+                <button type="submit">Login</button>
+                <p class="error-message" id="errorMessage">Invalid credentials. Please try again.</p>
+            </form>
         </div>
     </main>
-    <script type="text/javascript" src="app.js"></script>
-    <script type="text/javascript" src="./pwa/init_sw.js"></script>
+    <script type="text/javascript" src="login.js"></script>
 </body>
 </html>
