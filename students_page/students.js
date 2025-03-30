@@ -1,3 +1,6 @@
+let currentPage = 1;
+let hasNextPage = false;
+const paginationContainer = document.querySelector('.page-numbers');
 const pagination_limit = 4;
 let modal_create = document.getElementById("create");
 let modal_delete = document.getElementById("delete_confirm");
@@ -5,6 +8,7 @@ let btn_add = document.getElementsByClassName("add")[0];
 let btn_edit = document.querySelectorAll('.edit');
 let btn_delete = document.querySelectorAll('.delete');
 let span_create = document.getElementsByClassName("close")[0];
+let cancel_create = document.getElementsByClassName("close_button_create")[0]
 let span_delete = document.getElementsByClassName("close_delete")[0];
 let submit_button = document.querySelector('.submit_button');
 let tbody = document.querySelector('tbody');
@@ -17,7 +21,8 @@ let currentRow = null;
 
 
 function bindEditHandler(btn) {
-    btn.onclick = function() {
+    btn.onclick = function(event) {
+        event.preventDefault();
         currentRow = btn.closest('tr');
         if (!currentRow.querySelector('input[type="checkbox"]').checked){
             return;
@@ -30,11 +35,20 @@ function bindEditHandler(btn) {
         let cells = currentRow.getElementsByTagName('td');
 
         const groupSelect = document.getElementById('group');
-        const fnameInput = document.getElementById('fname');
-        const lnameInput = document.getElementById('lname');
+        const fnameInput = document.getElementById('first_name');
+        const lnameInput = document.getElementById('last_name');
         const genderSelect = document.getElementById('gender');
         const birthdayInput = document.getElementById('birthday');
-        
+        const form = document.getElementById('form');
+
+        [fnameInput, lnameInput, birthdayInput, form].forEach(input => {
+            input.classList.remove('error');
+            const errorSpan = input.nextElementSibling;
+            if (errorSpan && errorSpan.className === 'error-message') {
+                errorSpan.remove();
+            }
+        });
+
         groupSelect.value = cells[1].textContent;
         let fullName = cells[2].textContent.split(' ');
         fnameInput.value = fullName[0];
@@ -109,33 +123,47 @@ btn_delete.forEach(bindDeleteHandler);
 bodyCheckboxes.forEach(bindCheckboxHandler);
 
 
-btn_add.onclick = function() {
+btn_add.onclick = function(event) {
+    event.preventDefault();
     form_h2.textContent = "Add Student";
     submit_button.value = "Create";
     modal_create.style.display = "block";
     currentMode = 'add';
-    document.querySelector('form').reset();
-};
 
-function validateForm() {
-    const group = document.getElementById('group').value;
-    const fname = document.getElementById('fname');
-    const lname = document.getElementById('lname');
-    const gender = document.getElementById('gender').value;
+    const fname = document.getElementById('first_name');
+    const lname = document.getElementById('last_name');
     const birthday = document.getElementById('birthday');
-    
-    const nameRegex = /^[A-Za-zА-Яа-я]{2,}$/;
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    
-    let isValid = true;
-    
-    [fname, lname, birthday].forEach(input => {
+    const form = document.getElementById('form');
+    [fname, lname, birthday, form].forEach(input => {
         input.classList.remove('error');
         const errorSpan = input.nextElementSibling;
         if (errorSpan && errorSpan.className === 'error-message') {
             errorSpan.remove();
         }
     });
+    document.querySelector('form').reset();
+};
+
+function validateForm() {
+    const group = document.getElementById('group').value;
+    const fname = document.getElementById('first_name');
+    const lname = document.getElementById('last_name');
+    const gender = document.getElementById('gender').value;
+    const birthday = document.getElementById('birthday');
+    const form1 = document.getElementById("form");
+    [fname, lname, birthday, form1].forEach(input => {
+        input.classList.remove('error');
+        const errorSpan = input.nextElementSibling;
+        if (errorSpan && errorSpan.className === 'error-message') {
+            errorSpan.remove();
+        }
+    });
+
+    const nameRegex = /^[A-Za-zА-Яа-я]{2,}$/;
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    
+    let isValid = true;
+    
 
     if (!nameRegex.test(fname.value)) {
         showError(fname, 'First name must be at least 2 only letters');
@@ -180,7 +208,7 @@ function showError(input, message) {
     input.parentNode.insertBefore(errorSpan, input.nextSibling);
 }
 
-submit_button.onclick = function(event) {
+submit_button.onclick = async function(event) {
     event.preventDefault();
 
     if (!validateForm()) {
@@ -188,66 +216,141 @@ submit_button.onclick = function(event) {
     }
 
     let group = document.getElementById('group').value;
-    let fname = document.getElementById('fname').value;
-    let lname = document.getElementById('lname').value;
+    let fname = document.getElementById('first_name');
+    let lname = document.getElementById('last_name');
     let gender = document.getElementById('gender').value;
-    let birthday = document.getElementById('birthday').value;
+    let birthday = document.getElementById('birthday');
+    let form1 = document.getElementById("form")
 
-    let birthdayFormatted = birthday.split('-').reverse().join('.');
     const studentData = {
         group : group,
-        first_name: fname,
-        last_name: lname,
+        first_name: fname.value,  
+        last_name: lname.value,
         gender : gender,
-        birthday: birthday,
+        birthday: birthday.value,
     };
+
     student_json=JSON.stringify(studentData);
     console.log(student_json);
     try{
         if (currentMode === 'add') {
-            createStudent(student_json);
+            await createStudent(student_json);
         } else if (currentMode === 'edit' && currentRow) {
             const id = parseInt((currentRow.querySelector('input[type="checkbox"]').id.replace(/\D/g, "")), 10);
-            updateStudent(id, student_json);
+            await updateStudent(id, student_json);
         }
         modal_create.style.display = "none";
     }
     catch (error) {
-        console.error("Error updating student:", error);
-        if(error.message==401){
-            alert("Signed out, try to sign in again");
-            window.location.href = "../index.html";   
+        [fname, lname, birthday, form1].forEach(input => {
+            input.classList.remove('error');
+            const errorSpan = input.nextElementSibling;
+            if (errorSpan && errorSpan.className === 'error-message') {
+                errorSpan.remove();
+            }
+        });
+        if (error.detail && Array.isArray(error.detail)) {
+            error.detail.forEach(function(field) {
+                const fieldName = field.loc[field.loc.length - 1];
+                const fieldElement = document.getElementById(fieldName);
+                if (fieldElement) {
+                    showError(fieldElement, field.msg);
+                } else {
+                    console.warn(`Field ${fieldName} not found in form`);
+                    showError(form, field.msg);
+                }
+            });
+        } else {
+            console.error("Error student form:", error);
+            
+            if (error == "401") {
+                alert("Signed out, try to sign in again");
+                window.location.href = "../index.html";
+            }
+            showError(form, error.detail || "An unexpected error occurred");
         }
     } 
 };
 
-span_create.onclick = function() {
+span_create.onclick = function(event) {
+    event.preventDefault();
     modal_create.style.display = "none";
 };
 
-span_delete.onclick = function() {
+span_delete.onclick = function(event) {
+    event.preventDefault();
     modal_delete.style.display = "none";
+};
+
+cancel_create.onclick = function(event) {
+    event.preventDefault();
+    modal_create.style.display = "none";
 };
 
 window.onclick = function(event) {
     if (event.target == modal_create) {
+        event.preventDefault();
         modal_create.style.display = "none";
     }
 };
 
 window.onclick = function(event) {
     if (event.target == modal_delete) {
+        event.preventDefault();
         modal_delete.style.display = "none";
     }
 };
 
+function updatePagination() {
+    paginationContainer.innerHTML = '';
+    
+    const maxPagesToShow = 4;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = startPage + maxPagesToShow - 1;
 
-document.addEventListener("DOMContentLoaded", fetchStudents);
+    if (currentPage <= Math.floor(maxPagesToShow / 2)) {
+        startPage = 1;
+        endPage = Math.min(maxPagesToShow, currentPage + Math.floor(maxPagesToShow / 2));
+    }
+
+    if (!hasNextPage && tbody.children.length < pagination_limit) {
+        endPage = currentPage;
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = i;
+        if (i === currentPage) {
+            pageBtn.classList.add('active');
+        }
+        pageBtn.addEventListener('click', () => {
+            fetchStudents(i);
+        });
+        paginationContainer.appendChild(pageBtn);
+    }
+
+    document.querySelector('.prev-page').disabled = currentPage === 1;
+    document.querySelector('.next-page').disabled = !hasNextPage;
+}
+
+document.querySelector('.prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+        fetchStudents(currentPage - 1);
+    }
+});
+
+document.querySelector('.next-page').addEventListener('click', () => {
+    if (hasNextPage) {
+        fetchStudents(currentPage + 1);
+    }
+});
+
+document.addEventListener("DOMContentLoaded", fetchStudents(currentPage));
 document.addEventListener("DOMContentLoaded", fetchUser);
 
-async function fetchStudents() {
+async function fetchStudents(page) {
     try {
-        const response = await fetch("http://localhost:8000/api/v1/student/?offset=0&limit="+ pagination_limit,{
+        const response = await fetch(`http://localhost:8000/api/v1/student/?offset=${(page-1)*pagination_limit}&limit=${pagination_limit + 1}`, {
             method: "GET",
             headers: {
                 "Authorization": "Basic " + sessionStorage.getItem("credentials"),
@@ -260,7 +363,14 @@ async function fetchStudents() {
         }
         const data = await response.json();
         let students = data.data;
-        students.sort((a, b) => a.id - b.id);
+
+        currentPage = page;
+
+        hasNextPage = students.length > pagination_limit;
+        
+        if (hasNextPage) {
+            students = students.slice(0, pagination_limit);
+        }
         console.log(students);
         tbody.innerHTML = "";
 
@@ -284,16 +394,18 @@ async function fetchStudents() {
             new_row.querySelector('input[type="checkbox"]').checked = headerCheckbox.checked;
             tbody.appendChild(new_row);
             bodyCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
-    
+            
             bindEditHandler(new_row.querySelector('.edit'));
             bindDeleteHandler(new_row.querySelector('.delete'));
             bindCheckboxHandler(new_row.querySelector('input[type="checkbox"]'));
         });
+        updatePagination();
     } catch (error) {
         console.error("Error fetching students:", error);
-        if(error.message==401)
+        if(error.message==401){
             alert("Signed out, try to sign in again");
-            window.location.href = "../index.html";   
+            window.location.href = "../index.html";  
+        } 
     }
 }
 
@@ -314,13 +426,16 @@ async function fetchUser() {
         username.innerHTML=data.first_name + " " + data.last_name;
     } catch (error) {
         console.error("Error fetching user:", error);
-        if(error.message==401)
+        if(error.message==401){
             alert("Signed out, try to sign in again");
-            window.location.href = "../index.html";        
+            window.location.href = "../index.html";    
+        }    
     }
 }
 
-document.querySelector(".sign_out").addEventListener("click", async function (event) {
+document.querySelector(".sign_out").addEventListener("click", signOut);
+
+async function signOut(event) {
     try {
         const response = await fetch("http://localhost:8000/api/v1/student/logout", {
             method: "POST",
@@ -338,8 +453,7 @@ document.querySelector(".sign_out").addEventListener("click", async function (ev
     } catch (error) {
         console.error("Error during logout", error);
     }
-});
-
+}
 
 async function createStudent(student_json) {
     try {
@@ -353,12 +467,18 @@ async function createStudent(student_json) {
         });
 
         if (response.ok) {
+            fetchStudents(currentPage);
         } else {
-            const errorData = await response.json();
-            throw new Error(`Failed to create student: ${errorData.detail || response.statusText}`);
+            if(response.status == "401"){
+                throw response.status;
+            }
+            else{
+                const errorData = await response.json();
+                throw errorData;
+            }
+            
         }
     } catch (error) {
-        console.error("Error creating student:", error);
         throw error;
     }
 }
@@ -375,12 +495,17 @@ async function updateStudent(id, student_json) {
         });
 
         if (response.ok) {
+            fetchStudents(currentPage);
         } else {
-            const errorData = await response.json();
-            throw new Error(`Failed to update student: ${errorData.detail || response.statusText}`);
+            if(response.status == "401"){
+                throw response.status;
+            }
+            else{
+                const errorData = await response.json();
+                throw errorData;
+            }      
         }
     } catch (error) {
-        console.error("Error updating student:", error);
         throw error;
     }
 }
@@ -396,6 +521,7 @@ async function deleteStudent(id) {
         });
 
         if (response.ok) {
+            fetchStudents(currentPage);
         } else {
             const errorData = await response.json();
             throw new Error(`Failed to update student: ${errorData.detail || response.statusText}`);

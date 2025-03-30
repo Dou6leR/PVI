@@ -28,7 +28,7 @@ GROUPS = [
 GENDERS = ["Male", "Female", "Other"]
 
 
-async def populate_students(session, num_students: int = 20, ):
+async def populate_students(session, num_students: int = 20):
     try:
         for _ in range(num_students):
             current_year = date.today().year
@@ -67,7 +67,7 @@ async def main():
     postgres_helper.create_db_and_tables()
     logger.info("Starting student population...")
     session = Session(postgres_helper.engine)
-    await populate_students(session=session, num_students=10)
+    await populate_students(session=session, num_students=30)
     logger.info("Population complete!")
 
 

@@ -83,8 +83,36 @@ button {
 }
 
 .pagination {
-    margin-top: 20px;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+    gap: 5px;
+}
+
+.pagination button {
+    padding: 5px 10px;
+    margin: 0 2px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    cursor: pointer;
+    border-radius: 3px;
+}
+
+.pagination button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.page-numbers {
+    display: flex;
+    gap: 5px;
 }
 
 .modal_create {
@@ -105,7 +133,7 @@ button {
     padding: 20px;
     border: 1px solid #888;
     width: 300px;
-    height: 600px;
+    height: 620px;
     border-radius: 10px;
 }
 
@@ -116,10 +144,16 @@ button {
     font-weight: bold;
 }
 
-.close:hover, .close:focus {
+.close:hover, .close:focus, .close_button_create:hover {
     color: black;
     text-decoration: none;
     cursor: pointer;
+}
+.close_button_create{
+    color: #aaa;
+    float: right;
+    font-size: 24px;
+    font-weight: bold;
 }
 
 .form {
@@ -128,7 +162,7 @@ button {
 }
 
 h2{
-    padding: 20px;
+    padding: 10px;
 }
 
 .form label {
@@ -141,14 +175,14 @@ h2{
 .form input {
     display: inline-block;
     font-size: 16px;
-    width: 150px;
+    width: 130px;
     padding: 8px 4px;
 }
 
 .form select {
     display: inline-block;
     font-size: 16px;
-    width: 150px;
+    width: 130px;
     padding: 8px 4px;
 }
 .submit_button {
