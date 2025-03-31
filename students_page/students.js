@@ -63,7 +63,7 @@ function bindDeleteHandler(btn) {
     btn.onclick = function() {
         const checkedBoxes = Array.from(bodyCheckboxes).filter(checkbox => checkbox.checked);
         currentRow = btn.closest('tr');
-        if (!currentRow.querySelector('input[type="checkbox"]').checked){
+        if (!currentRow.querySelector('input[type="checkbox"]').checked) {
             return;
         }
 
@@ -82,15 +82,16 @@ function bindDeleteHandler(btn) {
 
         const confirmDelete = document.querySelector('.submit_button_delete');
         if (confirmDelete) {
-            confirmDelete.onclick = function(event) {
+            confirmDelete.onclick = async function(event) {
                 event.preventDefault(); 
                 const allRows = document.querySelectorAll('tbody tr');
-                allRows.forEach(row => {
+                for (const row of allRows) {
                     if (row.querySelector('input[type="checkbox"]').checked) {
-                        let id = parseInt((row.querySelector('input[type="checkbox"]').id.replace(/\D/g, "")), 10);
-                        deleteStudent(id);
+                        let id = parseInt(row.querySelector('input[type="checkbox"]').id.replace(/\D/g, ""), 10);
+                        await deleteStudent(id);
                     }
-                });
+                }
+                await fetchStudents(currentPage);
                 
                 modal_delete.style.display = "none";
                 bodyCheckboxes = document.querySelectorAll('tbody input[type="checkbox"]');
@@ -211,9 +212,9 @@ function showError(input, message) {
 submit_button.onclick = async function(event) {
     event.preventDefault();
 
-    if (!validateForm()) {
-        return;
-    }
+    // if (!validateForm()) {
+    //     return;
+    // }
 
     let group = document.getElementById('group').value;
     let fname = document.getElementById('first_name');
@@ -305,15 +306,15 @@ function updatePagination() {
     paginationContainer.innerHTML = '';
     
     const maxPagesToShow = 4;
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let startPage = Math.max(1, currentPage - maxPagesToShow / 2);
     let endPage = startPage + maxPagesToShow - 1;
 
-    if (currentPage <= Math.floor(maxPagesToShow / 2)) {
+    if (currentPage <= maxPagesToShow / 2) {
         startPage = 1;
-        endPage = Math.min(maxPagesToShow, currentPage + Math.floor(maxPagesToShow / 2));
+        endPage = Math.min(maxPagesToShow, currentPage + maxPagesToShow / 2) - 1;
     }
 
-    if (!hasNextPage && tbody.children.length < pagination_limit) {
+    if (!hasNextPage && tbody.children.length < pagination_limit + 1) {
         endPage = currentPage;
     }
 
@@ -406,6 +407,10 @@ async function fetchStudents(page) {
             alert("Signed out, try to sign in again");
             window.location.href = "../index.html";  
         } 
+        else if (error.message==404)
+        {
+            fetchStudents(currentPage - 1);
+        }
     }
 }
 
@@ -521,7 +526,13 @@ async function deleteStudent(id) {
         });
 
         if (response.ok) {
-            fetchStudents(currentPage);
+            // if(!hasNextPage && tbody.children.length === 1)
+            // {
+            //     console.log(" currentPage--");
+            //     currentPage--;
+            // }         
+            // await fetchStudents(currentPage);
+            
         } else {
             const errorData = await response.json();
             throw new Error(`Failed to update student: ${errorData.detail || response.statusText}`);

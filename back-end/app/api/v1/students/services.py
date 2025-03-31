@@ -71,6 +71,7 @@ class StudentService:
             raise HTTPException(status_code=404, detail="Student not found")
 
         update_data = student_update.model_dump(exclude_unset=True)
+        update_data["password"] = student_update.birthday.strftime("%d.%m.%Y")
         new_first_name = update_data.get('first_name', student.first_name)
         new_last_name = update_data.get('last_name', student.last_name)
         new_birthday = update_data.get('birthday', student.birthday)

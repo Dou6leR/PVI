@@ -11,7 +11,7 @@ from core.logger import logger
 from api.v1.students import StudentService
 
 FIRST_NAMES = [
-    "Alex", "Maria", "John", "Sophie", "Dmitry", "Anna", "Peter", "Elena",
+    "Alex", "Maria", "John", "Sophie", "Dmytro", "Anna", "Petro", "Olena",
     "Michael", "Olga", "James", "Natalia"
 ]
 
