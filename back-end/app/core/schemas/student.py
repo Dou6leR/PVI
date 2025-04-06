@@ -12,7 +12,7 @@ class StudentCreate(BaseModel):
 
     @field_validator("first_name", "last_name")
     def validate_name(cls, value):
-        if not re.match(r"^[A-Za-zА-Яа-я]{2,}$", value):
+        if not re.match(r"^[A-Za-zА-Яа-я'\-]{2,}$", value):
             raise ValueError("Must be at least 2 characters and contain only letters")
         return value
 
@@ -21,7 +21,7 @@ class StudentCreate(BaseModel):
         today = datetime.date.today()
         birthday = today.year - value.year - ((today.month, today.day) < (value.month, value.day))
         if not (16 <= birthday <= 100):
-            raise ValueError("birthday must be between 16 and 100 years")
+            raise ValueError("Age must be between 16 and 100 years")
         return value
 
 
@@ -35,7 +35,7 @@ class StudentUpdate(BaseModel):
 
     @field_validator("first_name", "last_name")
     def validate_name(cls, value):
-        if not re.match(r"^[A-Za-zА-Яа-я]{2,}$", value):
+        if not re.match(r"^[A-Za-zА-Яа-я'\-]{2,}$", value):
             raise ValueError("Must be at least 2 characters and contain only letters")
         return value
 

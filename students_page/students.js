@@ -152,6 +152,7 @@ function validateForm() {
     const gender = document.getElementById('gender').value;
     const birthday = document.getElementById('birthday');
     const form1 = document.getElementById("form");
+
     [fname, lname, birthday, form1].forEach(input => {
         input.classList.remove('error');
         const errorSpan = input.nextElementSibling;
@@ -160,7 +161,7 @@ function validateForm() {
         }
     });
 
-    const nameRegex = /^[A-Za-zА-Яа-я]{2,}$/;
+    const nameRegex = /^[A-Za-zА-Яа-я'\-]{2,}$/;
     const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
     
     let isValid = true;
@@ -255,10 +256,10 @@ submit_button.onclick = async function(event) {
                 const fieldName = field.loc[field.loc.length - 1];
                 const fieldElement = document.getElementById(fieldName);
                 if (fieldElement) {
-                    showError(fieldElement, field.msg);
+                    showError(fieldElement, field.msg.slice(13));
                 } else {
                     console.warn(`Field ${fieldName} not found in form`);
-                    showError(form, field.msg);
+                    showError(form, field.msg.slice(13));
                 }
             });
         } else {

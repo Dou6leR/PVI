@@ -15,7 +15,7 @@ class Student(SQLModel, table=True):
 
     @field_validator("first_name", "last_name")
     def validate_name(cls, value):
-        if not re.match(r"^[A-Za-zА-Яа-я]{2,}$", value):
+        if not re.match(r"^[A-Za-zА-Яа-я'\-]{2,}$", value):
             raise ValueError("Must be at least 2 characters and contain only letters")
         return value
 
