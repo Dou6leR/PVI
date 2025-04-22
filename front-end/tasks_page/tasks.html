@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="PVI labs" />
+    <link rel="stylesheet" href="students.css" />
     <link rel="stylesheet" href="../main.css" />
     <link rel="manifest" href="../pwa/manifest.json">
     <title>Riznyk Rostyslav</title>
@@ -23,7 +24,7 @@
                 <div class="bell">
                     <div class="bell_badge">
                         <a href="../messages_page/messages.html">
-                            <img class="bell_icon" alt="Bell_icon" oncontextmenu="toggleBellAnimation()" src="../src/bell.png" />
+                            <img class="bell_icon" alt="Bell_icon" src="../src/bell.png" />
                         </a>
                         <span class="badge"></span>
                     </div>
@@ -54,9 +55,12 @@
                 <div class="user">
                     <div class="user_block">
                     <img class="user_icon" alt="User_icon" src="../src/user.png" />
-                    <div class="username">John Smith</div>
+                    <div class="username">Username</div>
                     </div>
-                    <div class="dropdown_user">Profile<br>Sign out</div>
+                    <div class="dropdown_user">
+                        <button class="profile">Profile</button><br>
+                        <button class="sign_out">Sign out</button>
+                    </div>
                 </div>      
             </div>
         </nav>
@@ -65,10 +69,10 @@
         <div class="sidebar">           
             <a href="../dashboard_page/dashboard.html">Dashboard</a>
             <a href="../students_page/students.html">Students</a>
-            <a href="../tasks_page/tasks.html">Tasks</a>      
+            <a href="tasks.html" class="active_page">Tasks</a>      
         </div>
     </main>
-<script type="text/javascript" src="../app.js"></script>
-<script type="text/javascript" src="../pwa/init_sw.js"></script>
+    <script type="text/javascript" src="../app.js"></script>
+    <script type="text/javascript" src="../pwa/init_sw.js"></script>
 </body>
 </html>

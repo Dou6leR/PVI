@@ -1,4 +1,5 @@
 __all__ = [
+    "logger",
     "settings",
     "postgres_helper",
 ]

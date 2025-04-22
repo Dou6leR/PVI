@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="PVI labs" />
+    <link rel="stylesheet" href="../main.css" />
+    <link rel="stylesheet" href="./messages.css" />
+    <!-- <link rel="manifest" href="../pwa/manifest.json"> -->
+    <title>Riznyk Rostyslav</title>
+</head>
+<body>
+    <header>
+        <nav>
+            <div class="left_header">
+                <div class="burger-menu">
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                    <div class="bar"></div>
+                </div>
+                <div class="logo"><a href="students.html">CMS</a></div>
+            </div>
+            <div class="right_header">
+                <div class="user">
+                    <div class="user_block">
+                    <img class="user_icon" alt="User_icon" src="../src/user.png" />
+                    <div class="username">Username</div>
+                    </div>
+                    <div class="dropdown_user">
+                        <button class="profile">Profile</button><br>
+                        <button class="sign_out">Sign out</button>
+                    </div>
+                </div>      
+            </div>
+        </nav>
+    </header>
+    <main>
+        <div class="sidebar">           
+            <a href="../dashboard_page/dashboard.html">Dashboard</a>
+            <a href="../students_page/students.html">Students</a>
+            <a href="../tasks_page/tasks.html">Tasks</a>      
+        </div>
+        <h1>Messages</h1>
+        <div class="container">
+            <div class="chats">
+                <div id="button-room" class="chat-room"><button id="btn_add_chat" class="add">+</button>New</div>
+            </div>
+            <div class="chat-area">
+                <div class="chat-header">Create new chat</div>
+                    <div class="members">
+                        <div class="members-avatars"></div>                    
+                        <button id="btn_add_member" class="add">+</button>
+                    </div>                
+                    <div class="messages"></div>
+                    <div class="input-area">
+                        <input id="input-area-block" type="text" placeholder="Type your message..." />
+                        <button id="send-message" class="send-message">&#9658;</button>
+                    </div>
+            </div>
+        </div>
+        <div id="modal_member" class="modal_add_member">
+            <div class="add_member_content">
+            <span class="close">&times;</span>
+            <input id="input-search-block" type="text" placeholder="Type your search..." />
+            <div class="students_from_search">
+                
+            </div>
+            </div>
+        </div>
+    </main>
+<script type="text/javascript" src="../app.js"></script>
+<script type="text/javascript" src="./messages.js"></script>
+<!-- <script type="text/javascript" src="../pwa/init_sw.js"></script> -->
+</body>
+</html>

@@ -1,6 +1,6 @@
 from fastapi import HTTPException, Depends
 from fastapi.security import HTTPBasicCredentials
-from sqlmodel import select
+from sqlmodel import select, or_, and_
 from starlette import status
 
 from core.models import Student
@@ -60,7 +60,8 @@ class StudentService:
                 status_code=400,
                 detail="Student with this first name, last name and birthday already exists"
             )
-        student = Student(**student_create.model_dump(), status=False, password=student_create.birthday.strftime("%d.%m.%Y"))
+        student = Student(**student_create.model_dump(), status=False,
+                          password=student_create.birthday.strftime("%d.%m.%Y"))
         session.add(student)
         session.commit()
 
@@ -71,26 +72,27 @@ class StudentService:
             raise HTTPException(status_code=404, detail="Student not found")
 
         update_data = student_update.model_dump(exclude_unset=True)
-        update_data["password"] = student_update.birthday.strftime("%d.%m.%Y")
-        new_first_name = update_data.get('first_name', student.first_name)
-        new_last_name = update_data.get('last_name', student.last_name)
-        new_birthday = update_data.get('birthday', student.birthday)
+        if all(key in update_data for key in ["birthday", "first_name", "last_name"]):
+            update_data["password"] = student_update.birthday.strftime("%d.%m.%Y")
+            new_first_name = update_data.get('first_name', student.first_name)
+            new_last_name = update_data.get('last_name', student.last_name)
+            new_birthday = update_data.get('birthday', student.birthday)
 
-        if new_first_name != student.first_name or new_last_name != student.last_name:
-            existing_student = session.exec(
-                select(Student).where(
-                    Student.first_name == new_first_name,
-                    Student.last_name == new_last_name,
-                    Student.birthday == new_birthday,
-                    Student.id != student_id,
-                )
-            ).first()
+            if new_first_name != student.first_name or new_last_name != student.last_name:
+                existing_student = session.exec(
+                    select(Student).where(
+                        Student.first_name == new_first_name,
+                        Student.last_name == new_last_name,
+                        Student.birthday == new_birthday,
+                        Student.id != student_id,
+                    )
+                ).first()
 
-            if existing_student:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Another student with this first name, last name and birthday already exists"
-                )
+                if existing_student:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Another student with this first name, last name and birthday already exists"
+                    )
         for key, value in update_data.items():
             setattr(student, key, value)
 
@@ -148,3 +150,21 @@ class StudentService:
         session.add(student)
         session.commit()
         session.refresh(student)
+
+    @classmethod
+    async def search_students(cls, session, query: str):
+        words = query.strip().split()
+
+        conditions = [
+            or_(
+                Student.first_name.ilike(f"%{word}%"),
+                Student.last_name.ilike(f"%{word}%")
+            )
+            for word in words
+        ]
+
+        stmt = select(Student).where(and_(*conditions)).limit(5)
+        students = session.exec(stmt).all()
+        if not students:
+            raise HTTPException(status_code=404, detail="Students not found")
+        return students

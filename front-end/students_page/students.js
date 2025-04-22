@@ -348,7 +348,6 @@ document.querySelector('.next-page').addEventListener('click', () => {
 });
 
 document.addEventListener("DOMContentLoaded", fetchStudents(currentPage));
-document.addEventListener("DOMContentLoaded", fetchUser);
 
 async function fetchStudents(page) {
     try {
@@ -412,30 +411,6 @@ async function fetchStudents(page) {
         {
             fetchStudents(currentPage - 1);
         }
-    }
-}
-
-async function fetchUser() {
-    try {
-        const response = await fetch("http://localhost:8000/api/v1/student/" + sessionStorage.getItem("studentId"),{
-            method: "GET",
-            headers: {
-                "Authorization": "Basic " + sessionStorage.getItem("credentials"),
-                "Content-Type": "application/json"
-            }
-        });
-        if (!response.ok) {
-            throw new Error(response.status);   
-        }
-        const data = await response.json();
-        username = document.querySelector(".username");
-        username.innerHTML=data.first_name + " " + data.last_name;
-    } catch (error) {
-        console.error("Error fetching user:", error);
-        if(error.message==401){
-            alert("Signed out, try to sign in again");
-            window.location.href = "../index.html";    
-        }    
     }
 }
 

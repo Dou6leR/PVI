@@ -3,6 +3,11 @@ __all__ = [
     "StudentUpdate",
     "StudentResponse",
     "StudentsResponse",
+    "MessageCreate",
+    "ChatCreate",
+    "ChatResponse",
+    "ChatsResponse",
+    "WSMessage",
 ]
 
 from .student import (
@@ -10,4 +15,11 @@ from .student import (
     StudentUpdate,
     StudentResponse,
     StudentsResponse,
+)
+from .messages import (
+    ChatCreate,
+    MessageCreate,
+    ChatResponse,
+    ChatsResponse,
+    WSMessage,
 )

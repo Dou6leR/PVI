@@ -23,7 +23,7 @@ class Logger(BaseModel):
 class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
     student: str = "/student"
-
+    message: str = "/message"
 
 
 class ApiPrefix(BaseModel):
@@ -35,6 +35,18 @@ class PostgresConfig(BaseSettings):
     url: str = "postgresql://postgres:7119@localhost:5432/CMS"
 
 
+class MongoDatabaseConfig(BaseModel):
+    host: str = "mongo:27018"
+    database_name: str = "cms"
+    test_database_name: str = "test_cms"
+    url: str = "mongodb://localhost:27018"
+
+    @property
+    def test_url(self) -> str:
+        mongo_db_uri = f"mongodb://{self.host}/{self.test_database_name}"
+        return mongo_db_uri
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env"),
@@ -44,6 +56,7 @@ class Settings(BaseSettings):
     )
     TESTING: bool = False
     postgres_config: PostgresConfig = PostgresConfig()
+    mongo_db: MongoDatabaseConfig = MongoDatabaseConfig()
     run: RunConfig = RunConfig()
     api: ApiPrefix = ApiPrefix()
     logger: Logger = Logger()

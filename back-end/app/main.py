@@ -7,6 +7,7 @@ from fastapi.responses import ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from core import settings, postgres_helper
+from core.helpers import mongo_db_helper
 
 from api import router as v1_router
 
@@ -14,8 +15,10 @@ from api import router as v1_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting lifespan")
+    await mongo_db_helper.connect()
     postgres_helper.create_db_and_tables()
     yield
+    await mongo_db_helper.dispose()
 
 
 app = FastAPI(lifespan=lifespan, default_response_class=ORJSONResponse)
@@ -38,4 +41,3 @@ if __name__ == "__main__":
         reload=settings.logger.reload,
         log_level=settings.logger.log_level,
     )
-

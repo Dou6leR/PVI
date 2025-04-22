@@ -26,6 +26,20 @@ async def get_students(
 
 
 @router.get(
+    "/search",
+    response_model=StudentsResponse,
+)
+async def search_students(
+        input_search: str,
+        session: postgres_helper.SessionDep,
+        auth: int = Depends(StudentService.login_student),
+):
+    return await StudentService.get_students_response(
+        await StudentService.search_students(session, input_search)
+    )
+
+
+@router.get(
     "/{student_id}",
     response_model=StudentResponse,
 )
@@ -51,7 +65,8 @@ async def create_student(
 )
 async def update_student(
         student_id: int, student: StudentUpdate,
-        session: postgres_helper.SessionDep
+        session: postgres_helper.SessionDep,
+        auth: int = Depends(StudentService.login_student)
 ):
     await StudentService.update_student(student_id, student, session)
 

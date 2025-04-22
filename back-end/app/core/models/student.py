@@ -1,7 +1,10 @@
+from typing import Optional
+
 from sqlmodel import SQLModel, Field
 from pydantic import field_validator
 import datetime
 import re
+
 
 class Student(SQLModel, table=True):
     id: int | None = Field(default=None, primary_key=True)
@@ -26,4 +29,3 @@ class Student(SQLModel, table=True):
         if not (16 <= age <= 100):
             raise ValueError("Age must be between 16 and 100 years")
         return value
-
