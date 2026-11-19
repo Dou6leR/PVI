@@ -25,11 +25,17 @@ app = FastAPI(lifespan=lifespan, default_response_class=ORJSONResponse)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.run.allowed_origin],
+    allow_origins=settings.run.get_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.get("/health", tags=["Health"])
+def health_check():
+    return {"status": "ok"}
+
 
 app.include_router(router=v1_router)
 

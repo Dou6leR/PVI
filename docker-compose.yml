@@ -1,10 +1,84 @@
 services:
-  mongo:
-    image: mongo
-    container_name: mongo-cms
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-cms
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-7119}
+      POSTGRES_DB: ${POSTGRES_DB:-CMS}
     ports:
-      - "27018:27017"
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-CMS}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cms-network
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo-cms
+    restart: unless-stopped
+    ports:
+      - "${MONGO_HOST_PORT:-27018}:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --port 27017 --eval 'db.adminCommand(\"ping\")' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cms-network
+
+  backend:
+    build:
+      context: ./back-end
+      dockerfile: Dockerfile
+    container_name: backend-cms
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    environment:
+      APP_CONFIG__POSTGRES_CONFIG__URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-7119}@postgres:5432/${POSTGRES_DB:-CMS}
+      APP_CONFIG__MONGO_DB__URL: mongodb://mongo:27017
+      APP_CONFIG__MONGO_DB__HOST: mongo:27017
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - cms-network
+
+  frontend:
+    build:
+      context: ./front-end
+      dockerfile: Dockerfile
+    container_name: frontend-cms
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_HOST_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - cms-network
+
 volumes:
+  postgres_data:
   mongo_data:
+
+networks:
+  cms-network:
+    driver: bridge

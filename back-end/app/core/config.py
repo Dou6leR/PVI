@@ -11,6 +11,22 @@ class RunConfig(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
     allowed_origin: str = "http://127.0.0.1:5500"
+    allowed_origins: list[str] = [
+        "http://127.0.0.1:5500",
+        "http://localhost:5500",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:80",
+        "http://127.0.0.1:80",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ]
+
+    def get_cors_origins(self) -> list[str]:
+        origins = set(self.allowed_origins)
+        if self.allowed_origin:
+            origins.add(self.allowed_origin)
+        return list(origins)
 
 
 class Logger(BaseModel):
