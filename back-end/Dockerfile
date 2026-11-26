@@ -18,12 +18,13 @@ COPY pyproject.toml ./
 # Ensure README.md exists
 RUN touch README.md
 
-# Install project dependencies into system Python using uv
+# Install project and test dependencies into system Python using uv
 ENV UV_SYSTEM_PYTHON=1
-RUN uv pip install --no-cache -r pyproject.toml
+RUN uv pip install --no-cache -r pyproject.toml --extra dev
 
-# Copy application source code
+# Copy application source code and test suite
 COPY app/ ./app/
+COPY tests/ ./tests/
 
 # Ensure internal packages (core, api) are resolvable from /app/app
 ENV PYTHONPATH=/app/app

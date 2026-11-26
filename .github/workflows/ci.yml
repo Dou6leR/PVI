@@ -1,0 +1,86 @@
+name: CMS CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  backend-tests:
+    name: Backend Pytest (PostgreSQL pgvector + MongoDB)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: 7119
+          POSTGRES_DB: CMS_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d CMS_test"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+      mongo:
+        image: mongo:latest
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand(\"ping\")' --quiet"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv & Python 3.13
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        working-directory: back-end
+        run: uv pip install --system -r pyproject.toml --extra dev
+
+      - name: Run pytest suite
+        working-directory: back-end
+        env:
+          PYTHONPATH: app
+          APP_CONFIG__POSTGRES_CONFIG__URL: postgresql://postgres:7119@localhost:5432/CMS_test
+          APP_CONFIG__MONGO_DB__URL: mongodb://localhost:27017
+          APP_CONFIG__MONGO_DB__DATABASE_NAME: test_cms
+          APP_CONFIG__AI__PROVIDER: auto
+          APP_CONFIG__AI__API_KEY: ""
+          APP_CONFIG__AI__OLLAMA_URL: http://127.0.0.1:11499
+        run: pytest tests -v
+
+  config-and-frontend-checks:
+    name: Docker Compose, n8n & Frontend Integrity
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose config
+        run: |
+          cp .env.example .env
+          docker compose config -q
+
+      - name: Validate JSON configs & frontend links
+        run: |
+          python3 -c '
+          import json, pathlib
+          for p in ["n8n/workflows/study_coach.json", "pgadmin/servers.json"]:
+              json.loads(pathlib.Path(p).read_text(encoding="utf-8"))
+          for html in pathlib.Path("front-end").rglob("*.html"):
+              txt = html.read_text(encoding="utf-8")
+              assert "tasks_page" not in txt, f"Found stale tasks_page link in {html}"
+          print("Config and frontend checks passed")
+          '

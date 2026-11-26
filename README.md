@@ -193,6 +193,9 @@ curl -X POST http://localhost:8000/mcp \
 # Перевірити, чи модель завантажена на GPU
 docker compose exec ollama ollama ps
 
+# Запустити автоматизовані тести (pytest)
+docker compose exec backend pytest tests -v
+
 # Переглянути логи бекенду або Ollama
 docker compose logs -f backend ollama
 
