@@ -50,8 +50,7 @@ class AIConfig(BaseModel):
     embedding_model: str = "text-embedding-004"
     ollama_url: str = "http://ollama:11434"
     ollama_model: str = "qwen3.5:4b"
-    ollama_embedding_model: str = ""
-    enable_mock_fallback: bool = True
+    ollama_embedding_model: str = "bge-m3"
 
 
 class ApiPrefix(BaseModel):

@@ -55,6 +55,7 @@ services:
       APP_CONFIG__AI__MODEL: ${APP_CONFIG__AI__MODEL:-gemini-3.8-flash}
       APP_CONFIG__AI__OLLAMA_URL: ${APP_CONFIG__AI__OLLAMA_URL:-http://ollama:11434}
       APP_CONFIG__AI__OLLAMA_MODEL: ${APP_CONFIG__AI__OLLAMA_MODEL:-qwen3.5:4b}
+      APP_CONFIG__AI__OLLAMA_EMBEDDING_MODEL: ${APP_CONFIG__AI__OLLAMA_EMBEDDING_MODEL:-bge-m3}
     ports:
       - "${BACKEND_HOST_PORT:-8000}:8000"
     healthcheck:

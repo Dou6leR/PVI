@@ -1,4 +1,7 @@
-import re
+import asyncio
+import json
+import urllib.error
+import urllib.request
 from typing import Optional
 import numpy as np
 from sqlmodel import Session, select, func
@@ -8,39 +11,7 @@ from core.logger import logger
 from core.models.rag import KnowledgeChunk, EMBEDDING_DIM
 
 
-class LocalVectorEmbedding:
-    """
-    Lightweight character n-gram + term hashing embedding generator.
-    Produces normalized EMBEDDING_DIM-dimensional vectors as a zero-cost deterministic fallback.
-    """
-    def __init__(self, dim: int = EMBEDDING_DIM):
-        self.dim = dim
-
-    def embed(self, text: str) -> np.ndarray:
-        vec = np.zeros(self.dim, dtype=np.float32)
-        words = re.findall(r"\w+", text.lower())
-        if not words:
-            return vec
-
-        for word in words:
-            h = hash(word) % self.dim
-            vec[h] += 1.0
-
-        for i in range(len(text) - 2):
-            trigram = text[i:i+3].lower()
-            h = hash(trigram) % self.dim
-            vec[h] += 0.5
-
-        norm = np.linalg.norm(vec)
-        if norm > 0:
-            vec = vec / norm
-        return vec
-
-
 class RAGKnowledgeStore:
-    def __init__(self):
-        self.local_embedder = LocalVectorEmbedding(dim=EMBEDDING_DIM)
-
     @staticmethod
     def _fit_embedding_dim(vec: np.ndarray, target_dim: int = EMBEDDING_DIM) -> list[float]:
         """Normalizes and fits any embedding vector to PostgreSQL Vector(EMBEDDING_DIM)."""
@@ -53,22 +24,70 @@ class RAGKnowledgeStore:
             vec = vec / norm
         return vec.astype(float).tolist()
 
-    def _get_embedding(self, text: str) -> list[float]:
+    @staticmethod
+    def _is_gemini_configured() -> bool:
         api_key = settings.ai.api_key.strip()
-        if api_key and api_key != "your_gemini_api_key_here":
-            try:
-                from google import genai
-                client = genai.Client(api_key=api_key)
-                response = client.models.embed_content(
-                    model=settings.ai.embedding_model,
-                    contents=text,
-                )
-                vec = np.array(response.embedding.values, dtype=np.float32)
-                return self._fit_embedding_dim(vec, EMBEDDING_DIM)
-            except Exception as e:
-                logger.warning(f"Gemini embedding API call failed ({e}), using local vector fallback.")
+        return bool(api_key and api_key != "your_gemini_api_key_here")
 
-        return self._fit_embedding_dim(self.local_embedder.embed(text), EMBEDDING_DIM)
+    @staticmethod
+    def _call_ollama_embed_sync(text: str) -> np.ndarray:
+        """Generates dense semantic embeddings using the configured Ollama model (e.g. bge-m3)."""
+        base_url = settings.ai.ollama_url.rstrip("/")
+        model = settings.ai.ollama_embedding_model.strip() or "bge-m3"
+        payload = json.dumps({
+            "model": model,
+            "input": text,
+            "keep_alive": "10m",
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            f"{base_url}/api/embed",
+            data=payload,
+            method="POST",
+            headers={"Content-Type": "application/json"},
+        )
+        with urllib.request.urlopen(req, timeout=60.0) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        embeddings = data.get("embeddings") or []
+        if not embeddings or not embeddings[0]:
+            raise RuntimeError(f"Ollama returned empty embedding for model '{model}'")
+        return np.array(embeddings[0], dtype=np.float32)
+
+    def _embed_via_gemini(self, text: str) -> list[float]:
+        from google import genai
+
+        client = genai.Client(api_key=settings.ai.api_key.strip())
+        response = client.models.embed_content(
+            model=settings.ai.embedding_model,
+            contents=text,
+        )
+        vec = np.array(response.embedding.values, dtype=np.float32)
+        return self._fit_embedding_dim(vec, EMBEDDING_DIM)
+
+    def _embed_via_ollama(self, text: str) -> list[float]:
+        vec = self._call_ollama_embed_sync(text)
+        return self._fit_embedding_dim(vec, EMBEDDING_DIM)
+
+    def _get_embedding(self, text: str) -> list[float]:
+        pref = settings.ai.provider.strip().lower()
+        has_gemini = self._is_gemini_configured()
+
+        if pref == "gemini":
+            if not has_gemini:
+                raise RuntimeError("Gemini embedding selected, but APP_CONFIG__AI__API_KEY is not set.")
+            return self._embed_via_gemini(text)
+
+        if pref != "ollama" and has_gemini:
+            try:
+                return self._embed_via_gemini(text)
+            except Exception as e:
+                logger.warning(f"Gemini embedding failed ({e}), falling back to Ollama ({settings.ai.ollama_embedding_model}).")
+
+        try:
+            return self._embed_via_ollama(text)
+        except Exception as e:
+            raise RuntimeError(
+                f"Embedding service unavailable (Ollama model '{settings.ai.ollama_embedding_model}'): {e}"
+            ) from e
 
     @staticmethod
     def _split_text_cleanly(content: str, chunk_size: int = 800, overlap: int = 150) -> list[str]:
@@ -144,6 +163,7 @@ class RAGKnowledgeStore:
             page_num = page_info["page"]
             content = page_info["text"]
             for chunk_text in self._split_text_cleanly(content, chunk_size=chunk_size, overlap=overlap):
+                embedding = await asyncio.to_thread(self._get_embedding, chunk_text)
                 rows.append(
                     KnowledgeChunk(
                         student_id=int(student_id),
@@ -153,7 +173,7 @@ class RAGKnowledgeStore:
                         filename=filename,
                         page=page_num,
                         text=chunk_text,
-                        embedding=self._get_embedding(chunk_text),
+                        embedding=embedding,
                     )
                 )
 
@@ -217,10 +237,13 @@ class RAGKnowledgeStore:
         if not filters:
             return []
 
-        query_vec = self._get_embedding(query)
-        distance_expr = KnowledgeChunk.embedding.cosine_distance(query_vec)
-
         with Session(postgres_helper.engine) as session:
+            has_rows = session.exec(select(KnowledgeChunk.id).where(*filters).limit(1)).first()
+            if not has_rows:
+                return []
+
+            query_vec = self._get_embedding(query)
+            distance_expr = KnowledgeChunk.embedding.cosine_distance(query_vec)
             rows = session.exec(
                 select(KnowledgeChunk, (1.0 - distance_expr).label("similarity"))
                 .where(*filters)

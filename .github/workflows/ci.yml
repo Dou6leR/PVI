@@ -61,6 +61,7 @@ jobs:
           APP_CONFIG__AI__PROVIDER: auto
           APP_CONFIG__AI__API_KEY: ""
           APP_CONFIG__AI__OLLAMA_URL: http://127.0.0.1:11499
+          APP_CONFIG__AI__OLLAMA_EMBEDDING_MODEL: bge-m3
         run: .venv/bin/python -m pytest tests -v
 
   config-and-frontend-checks:

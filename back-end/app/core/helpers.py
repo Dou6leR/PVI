@@ -8,6 +8,7 @@ from sqlmodel import Session, create_engine, SQLModel
 
 from core import settings
 from core.models import all_document_models
+from core.models.rag import EMBEDDING_DIM
 from core.logger import logger
 
 
@@ -19,6 +20,20 @@ class PostgresHelper:
     def create_db_and_tables(self):
         with self.engine.begin() as conn:
             conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
+            existing_type = conn.execute(
+                text(
+                    "SELECT format_type(a.atttypid, a.atttypmod) "
+                    "FROM pg_attribute a "
+                    "JOIN pg_class c ON a.attrelid = c.oid "
+                    "JOIN pg_namespace n ON c.relnamespace = n.oid "
+                    "WHERE n.nspname = 'public' AND c.relname = 'rag_chunks' "
+                    "AND a.attname = 'embedding' AND NOT a.attisdropped"
+                )
+            ).scalar_one_or_none()
+            expected_type = f"vector({EMBEDDING_DIM})"
+            if existing_type and existing_type != expected_type:
+                logger.info(f"Migrating rag_chunks.embedding from {existing_type} to {expected_type}")
+                conn.execute(text("DROP TABLE IF EXISTS rag_chunks CASCADE"))
         SQLModel.metadata.create_all(self.engine)
         with self.engine.begin() as conn:
             conn.execute(

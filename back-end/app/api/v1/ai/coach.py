@@ -87,17 +87,22 @@ def _call_n8n_study_coach_sync(payload: dict) -> Optional[dict]:
     return None
 
 
-async def _generate_coach_fallback(
+async def _generate_coach_via_llm(
     topic: str,
     score: int,
     total: int,
     percent: int,
     mistakes: list[dict],
 ) -> tuple[str, str, str]:
-    """Mirrors the n8n IF workflow using active Gemini / Ollama / offline summary when n8n webhook is inactive."""
+    """Mirrors the n8n IF workflow directly using Gemini or Ollama when n8n webhook is inactive."""
     coach_mode, system_prompt, user_prompt = _build_coach_prompts(topic, score, total, percent, mistakes)
     pref = settings.ai.provider.strip().lower()
-    order = ["ollama", "gemini"] if pref == "ollama" else ["gemini", "ollama"]
+    if pref == "gemini":
+        order = ["gemini"]
+    elif pref == "ollama":
+        order = ["ollama"]
+    else:
+        order = ["gemini", "ollama"]
 
     for candidate in order:
         if candidate == "gemini" and ai_agent._is_live_gemini_available():
@@ -115,7 +120,7 @@ async def _generate_coach_fallback(
                 if resp.text and resp.text.strip():
                     return coach_mode, f"CMS Study Coach · Gemini ({settings.ai.model})", resp.text.strip()
             except Exception as e:
-                logger.warning(f"Gemini coach fallback failed: {e}")
+                logger.warning(f"Gemini coach generation failed: {e}")
         elif candidate == "ollama":
             try:
                 ollama_info = await ai_agent.get_ollama_status()
@@ -132,17 +137,12 @@ async def _generate_coach_fallback(
                     if text:
                         return coach_mode, f"CMS Study Coach · Ollama ({model})", text
             except Exception as e:
-                logger.warning(f"Ollama coach fallback failed: {e}")
+                logger.warning(f"Ollama coach generation failed: {e}")
 
-    # Pure offline deterministic summary if both LLMs are offline
-    lines = [f"### Шпаргалка: {topic}", f"**Результат:** {score}/{total} ({percent}%)", ""]
-    if mistakes:
-        lines.append("**Що варто повторити:**")
-        for m in mistakes:
-            lines.append(f"- **{m.get('question', '')}** → Правильна відповідь: `{m.get('correct_answer', '')}`")
-    else:
-        lines.append("Усі відповіді правильні — тема засвоєна на відмінно!")
-    return coach_mode, "CMS Study Coach (Offline)", "\n".join(lines)
+    raise HTTPException(
+        status_code=503,
+        detail="AI Study Coach недоступний: n8n, Ollama та Gemini не відповідають.",
+    )
 
 
 def _serialize_note(note: StudyNote) -> dict:
@@ -196,7 +196,7 @@ async def generate_and_save_study_note(
         source = n8n_res.get("source") or "n8n AI Study Coach"
         content_md = n8n_res["study_note_md"].strip()
     else:
-        coach_mode, source, content_md = await _generate_coach_fallback(
+        coach_mode, source, content_md = await _generate_coach_via_llm(
             clean_topic, score, total, percent, mistakes
         )
 

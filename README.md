@@ -12,9 +12,9 @@
 | :--- | :--- | :--- | :--- | :--- |
 | **Frontend** | `frontend-cms` | `nginx:alpine` + Vanilla JS/HTML/CSS | `3000` | Веб-інтерфейс (`Login`, `Dashboard`, `Students`, `Messages`, `Tests`) та reverse proxy `/api/` → `backend:8000` |
 | **Backend** | `backend-cms` | Python 3.13 + FastAPI + SQLModel + Beanie (`uv`) | `8000` | REST API, WebSockets, AI-агент (Tool Calling), PDF-парсер (`pypdf`), генератор тестів, MCP-сервер (`/mcp`) |
-| **PostgreSQL** | `postgres-cms` | `pgvector/pgvector:pg16` | `5433` | Таблиця студентів (`student`) та векторне сховище RAG (`rag_chunks`, `Vector(768)` з HNSW-індексом) |
+| **PostgreSQL** | `postgres-cms` | `pgvector/pgvector:pg16` | `5433` | Таблиця студентів (`student`) та векторне сховище RAG (`rag_chunks`, `Vector(1024)` з HNSW-індексом) |
 | **MongoDB** | `mongo-cms` | `mongo:latest` | `27018` | Персональні чати (`chats`), історія повідомлень (`messages`) та збережені шпаргалки (`study_notes`) |
-| **Ollama** | `ollama-cms` | `ollama/ollama:latest` (GPU/CUDA) | `11434` | Локальна LLM (`qwen3.5:4b`) з підтримкою NVIDIA GPU |
+| **Ollama** | `ollama-cms` | `ollama/ollama:latest` (GPU/CUDA) | `11434` | Локальна LLM (`qwen3.5:4b`) та модель ембедингів (`bge-m3`) з підтримкою NVIDIA GPU |
 | **n8n** | `n8n-cms` | `docker.n8n.io/n8nio/n8n:latest` | `5678` | Візуальний оркестратор сценарію `AI Study Coach` після здачі тестів |
 | **pgAdmin** | `pgadmin-cms` | `dpage/pgadmin4:latest` | `5050` | Веб-GUI для перегляду та запитів до PostgreSQL (`pgadmin/servers.json`) |
 
@@ -39,15 +39,15 @@ flowchart LR
 * **Студенти та авторизація:**
   * Базова HTTP-автентифікація за ім'ям/прізвищем та паролем (дата народження у форматі `ДД.ММ.РРРР`).
   * CRUD операції над студентами, пошук, пагінація та онлайн-статуси через WebSocket.
-* **Персональні AI-чати та приватний RAG (`Messages`):**
-  * Кожен користувач створює власні чати з довільною назвою (дисципліна/тема — необов'язкова).
-  * Завантаження `.pdf` через кнопку **`📎 PDF`** (витяг тексту через `pypdf`, нарізка по межах слів, ембединги у `rag_chunks` в PostgreSQL `pgvector`).
-  * Сувора ізоляція даних за `student_id` та `chat_id` (із `ON DELETE CASCADE` при видаленні студента).
+* **Чати в реальному часі (WebSocket) та приватний RAG (`Messages`):**
+  * Спілкування між студентами в реальному часі через WebSocket (`/api/v1/message/{student_id}/ws/{client_id}`): миттєва доставка повідомлень, створення групових/приватних кімнат, додавання учасників у чат та автоматичне оновлення онлайн-статусу.
+  * Історія повідомлень та учасники кімнат зберігаються в MongoDB (`chats`, `messages`).
+  * Персональні AI-чати з довільною назвою (дисципліна/тема — необов'язкова) та завантаженням `.pdf` через кнопку **`📎 PDF`** (витяг тексту через `pypdf`, нарізка по межах слів, векторні ембединги `bge-m3` у `rag_chunks` в PostgreSQL `pgvector`).
+  * Сувора ізоляція RAG-даних за `student_id` та `chat_id` (із `ON DELETE CASCADE` при видаленні студента).
   * AI-агент уміє шукати у ваших PDF та викликати SQL-інструменти по базі студентів (`search_students`, `get_group_students`, `get_system_stats`).
 * **AI-провайдери (Ollama GPU ↔ Google Gemini):**
-  * За замовчуванням (`APP_CONFIG__AI__PROVIDER=auto`) при порожньому `APP_CONFIG__AI__API_KEY` використовується локальна **Ollama (`qwen3.5:4b`)** на відеокарті.
+  * За замовчуванням (`APP_CONFIG__AI__PROVIDER=auto`) при порожньому `APP_CONFIG__AI__API_KEY` використовується виключно локальна **Ollama** — чат/тести (`qwen3.5:4b`) та семантичні ембединги RAG (`bge-m3`).
   * Щоб перейти на **Google Gemini**, достатньо вставити ключ у `APP_CONFIG__AI__API_KEY` у файлі `.env` і перезапустити `backend`.
-  * Якщо обидва провайдери недоступні — працює резервний локальний алгоритм (`Offline Fallback`).
 * **Генератор тестів та `n8n AI Study Coach` (`Tests`):**
   * Генерація `1–10` унікальних тестових запитань по PDF вибраного чату або за довільною темою (захист від повторів `previous_questions` + збалансована довжина варіантів).
   * Після натискання **«Перевірити результат»** кнопка **«🎯 Створити шпаргалку (n8n AI)»** запускає воркфлоу `n8n/workflows/study_coach.json`:
@@ -74,7 +74,8 @@ Copy-Item .env.example .env
 
 Основні параметри `.env`:
 * `APP_CONFIG__AI__PROVIDER=auto` — `auto` (Gemini якщо є ключ, інакше Ollama), або примусово `ollama` / `gemini`.
-* `APP_CONFIG__AI__OLLAMA_MODEL=qwen3.5:4b` — локальна модель Ollama.
+* `APP_CONFIG__AI__OLLAMA_MODEL=qwen3.5:4b` — локальна чат-модель Ollama.
+* `APP_CONFIG__AI__OLLAMA_EMBEDDING_MODEL=bge-m3` — локальна модель ембедингів для RAG.
 * `APP_CONFIG__AI__API_KEY=` — залиште порожнім для роботи через Ollama, або вставте ключ із Google AI Studio для Gemini.
 * Порти хоста: `FRONTEND_HOST_PORT=3000`, `BACKEND_HOST_PORT=8000`, `POSTGRES_HOST_PORT=5433`, `MONGO_HOST_PORT=27018`, `PGADMIN_HOST_PORT=5050`, `N8N_HOST_PORT=5678`, `OLLAMA_HOST_PORT=11434`.
 
@@ -88,9 +89,10 @@ docker compose up --build -d
 docker compose ps
 ```
 
-### Крок 3. Завантаження моделі в Ollama (один раз)
+### Крок 3. Завантаження моделей в Ollama (один раз)
 ```bash
 docker compose exec ollama ollama pull qwen3.5:4b
+docker compose exec ollama ollama pull bge-m3
 ```
 
 ### Крок 4. Заповнення бази тестовими студентами (перший запуск)
@@ -110,7 +112,7 @@ docker compose exec postgres psql -U postgres -d CMS -c "SELECT id, first_name, 
    ```
 2. Відкрийте [http://localhost:5678](http://localhost:5678), створіть локальний профіль (при першому вході).
 3. Відкрийте воркфлоу **AI Study Coach (Test Review & Cheat Sheet)** і натисніть **`Publish`** у правому верхньому куті.
-   *(Поки воркфлоу не опублікований, бекенд автоматично виконує ту саму логіку як fallback).*
+   *(Поки воркфлоу не опублікований, бекенд автоматично виконує ту саму логіку напряму через Ollama або Gemini).*
 
 ---
 

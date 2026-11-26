@@ -147,36 +147,6 @@ async def _generate_via_ollama(system_prompt: str, user_prompt: str) -> tuple[Op
     return parsed, f"Ollama ({model})"
 
 
-def _build_rag_fallback_quiz(topic: str, subject: str, rag_chunks: List[Dict[str, Any]], num_questions: int) -> dict:
-    """Offline fallback when no LLM provider is available."""
-    questions = []
-    for idx, chunk in enumerate(rag_chunks[:num_questions], start=1):
-        snippet = chunk.get("text", "")[:160].strip()
-        if not snippet:
-            continue
-        questions.append({
-            "id": idx,
-            "question": f"Яке з наведених положень відповідає матеріалу з файлу '{chunk.get('filename')}' (стор. {chunk.get('page')})?",
-            "options": [
-                f"{snippet}...",
-                "Це твердження не стосується даної теми та повністю виключене з матеріалу",
-                "Дана концепція заборонена до використання в сучасних системах",
-                "Жоден із наведених пунктів не описаний у документі"
-            ],
-            "correct_index": 0,
-            "explanation": f"Фрагмент взято безпосередньо зі сторінки {chunk.get('page')} файлу '{chunk.get('filename')}'."
-        })
-
-    return {
-        "status": "success" if questions else "empty",
-        "source": "CMS Offline Fallback",
-        "subject": subject,
-        "topic": topic or subject or "Тест за матеріалами чату",
-        "rag_context_used": len(rag_chunks) > 0,
-        "questions": questions,
-    }
-
-
 async def generate_quiz(
     subject: str = "",
     topic: str = "",
@@ -290,7 +260,12 @@ async def generate_quiz(
         )
 
     pref = settings.ai.provider.strip().lower()
-    order = ["ollama", "gemini"] if pref == "ollama" else ["gemini", "ollama"]
+    if pref == "gemini":
+        order = ["gemini"]
+    elif pref == "ollama":
+        order = ["ollama"]
+    else:
+        order = ["gemini", "ollama"]
 
     async def _run_provider(candidate_name: str, prompt_text: str) -> tuple[Optional[dict], str]:
         if candidate_name == "gemini" and ai_agent._is_live_gemini_available():
@@ -331,4 +306,13 @@ async def generate_quiz(
         except Exception as e:
             logger.warning(f"{candidate} quiz generation failed: {e}")
 
-    return _build_rag_fallback_quiz(effective_topic, clean_subject, rag_chunks, num_questions)
+    return {
+        "status": "error",
+        "http_status": 503,
+        "source": "CMS Tests",
+        "subject": clean_subject,
+        "topic": effective_topic,
+        "rag_context_used": len(rag_chunks) > 0,
+        "questions": [],
+        "detail": "Не вдалося згенерувати тест: перевірте, що Ollama запущена (або налаштований Gemini API key).",
+    }

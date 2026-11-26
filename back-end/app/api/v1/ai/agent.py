@@ -47,10 +47,10 @@ class CMSAIAgent:
         return await asyncio.to_thread(self._check_ollama_sync)
 
     @staticmethod
-    def _resolve_ollama_model(installed_models: list[str]) -> Optional[str]:
+    def _resolve_ollama_model(installed_models: list[str], preferred_model: Optional[str] = None, fallback_any: bool = True) -> Optional[str]:
         if not installed_models:
             return None
-        target = settings.ai.ollama_model.strip()
+        target = (preferred_model or settings.ai.ollama_model).strip()
         if target in installed_models:
             return target
         # Match tagless name or :latest variant (e.g. 'llama3.2' vs 'llama3.2:latest')
@@ -58,7 +58,7 @@ class CMSAIAgent:
         for model in installed_models:
             if model.split(":")[0] == target_base:
                 return model
-        return installed_models[0]
+        return installed_models[0] if fallback_any else None
 
     def _gather_context(
         self,
@@ -74,9 +74,13 @@ class CMSAIAgent:
         msg_lower = user_message.lower()
 
         # 1. RAG context (scoped strictly to student_id and chat_id)
-        rag_chunks = tool_query_subject_knowledge(
-            user_message, subject=subject, student_id=student_id, chat_id=chat_id, top_k=4
-        )
+        rag_chunks = [
+            c
+            for c in tool_query_subject_knowledge(
+                user_message, subject=subject, student_id=student_id, chat_id=chat_id, top_k=4
+            )
+            if isinstance(c, dict) and "text" in c and "filename" in c
+        ]
         is_overview = any(kw in msg_lower for kw in OVERVIEW_KEYWORDS)
         if is_overview:
             overview_chunks = rag_store.get_overview_chunks(
@@ -186,22 +190,29 @@ class CMSAIAgent:
         chat_history: Optional[list[dict]] = None,
     ) -> dict:
         """
-        Executes the AI Agent using the configured provider order:
-        - provider == 'gemini': Gemini -> Ollama -> Offline Fallback
-        - provider == 'ollama': Ollama -> Gemini -> Offline Fallback
-        - provider == 'auto' (default): Gemini (if API key set) -> Ollama (if running) -> Offline Fallback
+        Executes the AI Agent strictly via Gemini or Ollama (no offline mock fallback):
+        - provider == 'gemini': Gemini only
+        - provider == 'ollama': Ollama only
+        - provider == 'auto' (default): Gemini (if API key set) -> Ollama
         """
         subj = (subject or "").strip()
         ctx = self._gather_context(user_message, subj, session, student_id, chat_id, chat_history)
 
         pref = settings.ai.provider.strip().lower()
-        order = ["ollama", "gemini"] if pref == "ollama" else ["gemini", "ollama"]
+        if pref == "gemini":
+            order = ["gemini"]
+        elif pref == "ollama":
+            order = ["ollama"]
+        else:
+            order = ["gemini", "ollama"]
 
+        last_error: Optional[str] = None
         for candidate in order:
             if candidate == "gemini" and self._is_live_gemini_available():
                 try:
                     return await self._run_gemini_agent(subj, ctx)
                 except Exception as e:
+                    last_error = str(e)
                     logger.warning(f"Gemini execution failed ({e}); trying next provider.")
             elif candidate == "ollama":
                 ollama_info = await self.get_ollama_status()
@@ -210,9 +221,15 @@ class CMSAIAgent:
                     try:
                         return await self._run_ollama_agent(subj, ctx, resolved_model)
                     except Exception as e:
+                        last_error = str(e)
                         logger.warning(f"Ollama execution failed ({e}); trying next provider.")
+                else:
+                    last_error = f"Ollama unreachable at {settings.ai.ollama_url} or no chat model installed."
 
-        return self._run_smart_agent(user_message, subj, session, ctx)
+        raise RuntimeError(
+            last_error
+            or "No AI provider available: configure APP_CONFIG__AI__API_KEY for Gemini or ensure Ollama is running."
+        )
 
     async def _run_gemini_agent(self, subject: str, ctx: dict) -> dict:
         from google import genai
@@ -288,90 +305,6 @@ class CMSAIAgent:
             "response": reply_text,
             "tools_called": ctx["tools_called"],
             "provider": f"Ollama ({model})",
-            "subject": subject,
-        }
-
-    def _run_smart_agent(self, user_message: str, subject: str, session: Optional[Session], ctx: dict) -> dict:
-        """Offline fallback when neither Gemini API key nor an Ollama model is active."""
-        tools_called = ctx["tools_called"]
-        msg_lower = user_message.lower()
-
-        # 1. Database Intent: Statistics
-        if session is not None and any(w in msg_lower for w in ["статистик", "скільки всього", "скільки студент"]):
-            stats = tool_get_system_stats(session)
-            resp = "📊 **Статистика системи CMS:**\n\n"
-            resp += f"- **Всього зареєстровано студентів:** {stats.get('total_students', 0)}\n"
-            resp += f"- **Зараз онлайн:** {stats.get('online_students', 0)}\n"
-            resp += f"- **Кількість навчальних груп:** {stats.get('groups_count', 0)}\n"
-            resp += "- **Розподіл по групах:**\n"
-            for grp, cnt in stats.get("groups_distribution", {}).items():
-                resp += f"  - `{grp}`: {cnt} студентів\n"
-            return {
-                "response": resp,
-                "tools_called": tools_called,
-                "provider": "CMS Smart Agent Engine (Offline Fallback)",
-                "subject": subject,
-            }
-
-        # 2. Database Intent: Group Search
-        group_match = re.search(r"(pz-\d+|ki-\d+|sa-\d+)", msg_lower)
-        if session is not None and group_match:
-            grp = group_match.group(1).upper()
-            students = tool_get_group_students(grp, session)
-            if students:
-                resp = f"👥 **Студенти групи {grp} ({len(students)} осіб):**\n\n"
-                for idx, s in enumerate(students, 1):
-                    status_emoji = "🟢" if s["status"] == "Online" else "⚪"
-                    resp += f"{idx}. {s['name']} — {status_emoji} {s['status']}\n"
-                return {
-                    "response": resp,
-                    "tools_called": tools_called,
-                    "provider": "CMS Smart Agent Engine (Offline Fallback)",
-                    "subject": subject,
-                }
-
-        # 3. Database Intent: Student Search by Name
-        name_match = re.search(r"(знайди|хто такий|інформація про|пошук)\s+([a-zA-Zа-яА-ЯіїєґІЇЄҐ']+)", msg_lower)
-        if session is not None and name_match:
-            query_name = name_match.group(2)
-            found = tool_search_students(query_name, session)
-            if found and "error" not in found[0]:
-                resp = f"🔍 **Результати пошуку студента '{query_name}':**\n\n"
-                for s in found:
-                    resp += f"- **{s['first_name']} {s['last_name']}** (Група: `{s['group']}`, Статус: {s['status']}, Д/Н: {s['birthday']})\n"
-                return {
-                    "response": resp,
-                    "tools_called": tools_called,
-                    "provider": "CMS Smart Agent Engine (Offline Fallback)",
-                    "subject": subject,
-                }
-
-        # 4. RAG fallback
-        rag_results = ctx["rag_chunks"]
-        if rag_results and rag_results[0]["score"] > 0.05:
-            top_chunk = rag_results[0]
-            subj_label = f" ({top_chunk['subject']})" if top_chunk.get("subject") else ""
-            resp = f"📚 **Фрагмент із вашої бази знань{subj_label} (Офлайн-режим):**\n\n"
-            resp += f"{top_chunk['text']}\n\n"
-            resp += f"📌 *Джерело: файл `{top_chunk['filename']}`, сторінка {top_chunk['page']}.*"
-            return {
-                "response": resp,
-                "tools_called": tools_called,
-                "provider": "CMS Smart Agent Engine (Offline Fallback)",
-                "subject": subject,
-            }
-
-        subj_phrase = f" для напряму **'{subject}'**" if subject else ""
-        return {
-            "response": (
-                f"Привіт! Я **CMS AI Assistant**{subj_phrase}.\n\n"
-                f"Я можу допомогти вам із:\n"
-                f"1. 📄 **Вашою базою знань (PDF)**: натисніть 📎 внизу, щоб завантажити файл.\n"
-                f"2. 👥 **Даними студентів**: запитайте *'Хто в групі PZ-22?'* або *'Знайди студента'*.\n"
-                f"3. 📊 **Статистикою**: запитайте *'Скільки студентів зараз зареєстровано?'*."
-            ),
-            "tools_called": tools_called,
-            "provider": "CMS Smart Agent Engine (Offline Fallback)",
             "subject": subject,
         }
 

@@ -64,14 +64,17 @@ async def chat_with_agent(
         except Exception as e:
             logger.debug(f"Could not preload chat history for chat_id={payload.chat_id}: {e}")
 
-    result = await ai_agent.execute_agent(
-        user_message=payload.message,
-        subject=payload.subject or "",
-        session=session,
-        student_id=payload.student_id,
-        chat_id=payload.chat_id,
-        chat_history=chat_history,
-    )
+    try:
+        result = await ai_agent.execute_agent(
+            user_message=payload.message,
+            subject=payload.subject or "",
+            session=session,
+            student_id=payload.student_id,
+            chat_id=payload.chat_id,
+            chat_history=chat_history,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
 
     if chat_doc and payload.student_id in chat_doc.users:
         try:
@@ -131,6 +134,9 @@ async def upload_pdf_document(
         }
     except HTTPException:
         raise
+    except RuntimeError as e:
+        logger.error(f"Embedding service error for PDF {file.filename}: {e}")
+        raise HTTPException(status_code=503, detail=str(e))
     except Exception as e:
         logger.error(f"Error indexing PDF {file.filename}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -157,13 +163,16 @@ async def query_rag_knowledge(payload: RAGQueryRequest):
     """
     Direct RAG vector similarity search without LLM synthesis.
     """
-    results = rag_store.search(
-        query=payload.query,
-        subject=payload.subject,
-        student_id=payload.student_id,
-        chat_id=payload.chat_id,
-        top_k=payload.top_k
-    )
+    try:
+        results = rag_store.search(
+            query=payload.query,
+            subject=payload.subject,
+            student_id=payload.student_id,
+            chat_id=payload.chat_id,
+            top_k=payload.top_k
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     return {
         "query": payload.query,
         "subject": payload.subject,
@@ -175,33 +184,37 @@ async def query_rag_knowledge(payload: RAGQueryRequest):
 @router.get("/status")
 async def get_ai_status():
     """
-    Returns AI configuration and live provider status (Gemini / Ollama / Fallback).
+    Returns AI configuration and live provider status (Gemini / Ollama).
     """
     has_gemini = bool(settings.ai.api_key.strip() and settings.ai.api_key.strip() != "your_gemini_api_key_here")
     ollama_info = await ai_agent.get_ollama_status()
     resolved_ollama = ai_agent._resolve_ollama_model(ollama_info["models"])
+    resolved_embed = ai_agent._resolve_ollama_model(
+        ollama_info["models"],
+        preferred_model=settings.ai.ollama_embedding_model,
+        fallback_any=False,
+    )
     pref = settings.ai.provider.strip().lower()
 
     if pref == "ollama":
-        if ollama_info["reachable"] and resolved_ollama:
-            active = f"Ollama ({resolved_ollama})"
-        elif has_gemini:
-            active = f"Google Gemini ({settings.ai.model})"
-        else:
-            active = "CMS Smart Agent Engine (Offline Fallback)"
+        active = f"Ollama ({resolved_ollama})" if (ollama_info["reachable"] and resolved_ollama) else "Unavailable (Ollama unreachable)"
+    elif pref == "gemini":
+        active = f"Google Gemini ({settings.ai.model})" if has_gemini else "Unavailable (Gemini API key missing)"
     else:
         if has_gemini:
             active = f"Google Gemini ({settings.ai.model})"
         elif ollama_info["reachable"] and resolved_ollama:
             active = f"Ollama ({resolved_ollama})"
         else:
-            active = "CMS Smart Agent Engine (Offline Fallback)"
+            active = "Unavailable (Ollama unreachable / no Gemini key)"
 
     return {
         "provider": active,
         "configured_provider": settings.ai.provider,
         "gemini_model": settings.ai.model,
-        "embedding_model": settings.ai.embedding_model,
+        "embedding_model": settings.ai.embedding_model if has_gemini and pref != "ollama" else settings.ai.ollama_embedding_model,
+        "ollama_embedding_model": resolved_embed or settings.ai.ollama_embedding_model,
+        "ollama_embedding_ready": bool(ollama_info["reachable"] and resolved_embed),
         "live_gemini_configured": has_gemini,
         "ollama_reachable": ollama_info["reachable"],
         "ollama_model": resolved_ollama or settings.ai.ollama_model,
@@ -239,16 +252,22 @@ async def generate_test_quiz(payload: QuizGenerateRequest):
     Generates interactive multiple-choice test questions scoped to the user's selected chat/PDFs
     or a custom topic using the active AI provider (Ollama / Gemini).
     """
-    result = await generate_quiz(
-        subject=payload.subject,
-        topic=payload.topic,
-        chat_id=payload.chat_id,
-        student_id=payload.student_id,
-        num_questions=payload.num_questions,
-        previous_questions=payload.previous_questions,
-    )
+    try:
+        result = await generate_quiz(
+            subject=payload.subject,
+            topic=payload.topic,
+            chat_id=payload.chat_id,
+            student_id=payload.student_id,
+            num_questions=payload.num_questions,
+            previous_questions=payload.previous_questions,
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e))
     if result.get("status") == "error":
-        raise HTTPException(status_code=400, detail=result.get("detail", "Cannot generate test"))
+        raise HTTPException(
+            status_code=int(result.get("http_status", 400)),
+            detail=result.get("detail", "Cannot generate test"),
+        )
     return result
 
 

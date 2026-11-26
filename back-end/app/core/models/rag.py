@@ -3,7 +3,7 @@ from sqlalchemy import Column, ForeignKey, Text
 from sqlmodel import SQLModel, Field
 from pgvector.sqlalchemy import Vector
 
-EMBEDDING_DIM = 768
+EMBEDDING_DIM = 1024
 
 
 class KnowledgeChunk(SQLModel, table=True):

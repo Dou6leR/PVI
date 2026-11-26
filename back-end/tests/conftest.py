@@ -1,6 +1,10 @@
 import base64
 import datetime
+import hashlib
+import json
+import re
 from typing import Iterator
+import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 from pymongo import MongoClient
@@ -10,6 +14,10 @@ from sqlmodel import Session
 from main import app
 from core import postgres_helper, settings
 from core.models import Student
+from core.models.rag import EMBEDDING_DIM
+from api.v1.ai import agent as ai_agent_module
+from api.v1.ai import quiz as ai_quiz_module
+from api.v1.ai.rag import rag_store
 
 
 def make_basic_auth(first_name: str, last_name: str, password: str) -> dict[str, str]:
@@ -49,11 +57,68 @@ def client() -> Iterator[TestClient]:
         yield tc
 
 
+def _deterministic_test_embedding(text_input: str) -> np.ndarray:
+    """Test-only deterministic 1024-dim vector simulating Ollama bge-m3 without GPU calls."""
+    vec = np.zeros(EMBEDDING_DIM, dtype=np.float32)
+    words = re.findall(r"\w+", (text_input or "").lower())
+    for w in words:
+        idx = int.from_bytes(hashlib.blake2b(w.encode("utf-8"), digest_size=4).digest(), "little") % EMBEDDING_DIM
+        vec[idx] += 1.0
+    for i in range(max(0, len(text_input) - 2)):
+        tri = text_input[i : i + 3].lower()
+        idx = int.from_bytes(hashlib.blake2b(tri.encode("utf-8"), digest_size=4).digest(), "little") % EMBEDDING_DIM
+        vec[idx] += 0.5
+    norm = float(np.linalg.norm(vec))
+    return (vec / norm) if norm > 0 else vec
+
+
 @pytest.fixture(autouse=True)
-def force_deterministic_offline_ai(monkeypatch):
-    """Prevents tests from hitting live external APIs or spending GPU time on Ollama."""
+def mock_ollama_transport(monkeypatch):
+    """Mocks Ollama HTTP transport in tests while exercising full pgvector, MongoDB, and agent pipelines."""
     monkeypatch.setattr(settings.ai, "api_key", "")
     monkeypatch.setattr(settings.ai, "ollama_url", "http://127.0.0.1:11499")
+
+    monkeypatch.setattr(rag_store, "_call_ollama_embed_sync", _deterministic_test_embedding)
+    monkeypatch.setattr(
+        ai_agent_module.ai_agent,
+        "_check_ollama_sync",
+        lambda: {"reachable": True, "models": ["qwen3.5:4b", "bge-m3:latest"]},
+    )
+
+    def _fake_ollama_chat(model: str, messages: list[dict]) -> str:
+        user_content = messages[-1].get("content", "") if messages else ""
+        if "пройшов тест" in user_content:
+            return "### Шпаргалка (Ollama mock)\n- Повторіть ключові визначення з теми."
+        return f"Відповідь Ollama ({model}) з урахуванням контексту:\n{user_content[:500]}"
+
+    def _fake_ollama_quiz(model: str, system_prompt: str, user_prompt: str) -> str:
+        return json.dumps(
+            {
+                "questions": [
+                    {
+                        "question": "Яка роль FastAPI Depends у прикладі?",
+                        "options": [
+                            "Впровадження залежностей",
+                            "Стиснення зображень",
+                            "Рендеринг CSS",
+                            "Міграція Docker-томів",
+                        ],
+                        "correct_index": 0,
+                        "explanation": "Depends реалізує dependency injection.",
+                    },
+                    {
+                        "question": "Яке розширення зберігає вектори в PostgreSQL?",
+                        "options": ["pg_trgm", "pgvector", "postgis", "pgcrypto"],
+                        "correct_index": 1,
+                        "explanation": "pgvector додає тип vector та індекс HNSW.",
+                    },
+                ]
+            },
+            ensure_ascii=False,
+        )
+
+    monkeypatch.setattr(ai_agent_module.ai_agent, "_call_ollama_chat_sync", _fake_ollama_chat)
+    monkeypatch.setattr(ai_quiz_module, "_call_ollama_json_sync", _fake_ollama_quiz)
 
 
 @pytest.fixture()
