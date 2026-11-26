@@ -239,3 +239,98 @@ h1 {
     font-weight: bold;
     margin-left: 15px;
 }
+
+/* AI & Subject Chat Extensions */
+.btn-upload-pdf {
+    background-color: #f0f0f5;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 18px;
+    padding: 6px 12px;
+    cursor: pointer;
+    margin-right: 8px;
+    transition: all 0.2s ease;
+}
+.btn-upload-pdf:hover {
+    background-color: #e0e0ff;
+    border-color: #6366f1;
+}
+
+.subject-badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #4f46e5;
+    color: white;
+    margin-left: 6px;
+}
+
+.ai-badge {
+    background-color: #10b981;
+}
+
+.message.ai {
+    background-color: #f3f4f6;
+    border-left: 4px solid #6366f1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    max-width: 85%;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.tool-badge {
+    display: inline-block;
+    font-size: 11px;
+    color: #4338ca;
+    background-color: #e0e7ff;
+    border: 1px solid #c7d2fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-bottom: 6px;
+    font-weight: 500;
+}
+
+.system-notification {
+    text-align: center;
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin: 10px auto;
+    font-size: 13px;
+    max-width: 90%;
+}
+
+.create-chat-field {
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.create-chat-field label {
+    font-size: 13px;
+    font-weight: bold;
+    color: #374151;
+}
+
+.create-chat-field select, .create-chat-field input {
+    padding: 8px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.create-chat-ai-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px 0;
+    font-size: 14px;
+    cursor: pointer;
+}

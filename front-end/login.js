@@ -1,3 +1,19 @@
+// Ensure any old PWA Service Worker & caches are cleared on login page too
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const reg of registrations) {
+            reg.unregister();
+        }
+    });
+}
+if ("caches" in window) {
+    caches.keys().then((names) => {
+        for (const name of names) {
+            caches.delete(name);
+        }
+    });
+}
+
 document.getElementById("loginForm").addEventListener("submit", async function (event) {
     event.preventDefault();
     const firstName = document.getElementById("firstName").value;

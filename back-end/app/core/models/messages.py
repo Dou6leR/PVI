@@ -14,6 +14,8 @@ class Messages(Document):
 class Chat(Document):
     users: list[int | Student]
     chat_name: str
+    subject: str = ""
+    is_ai: bool = False
     messages: list[Link[Messages]] = []
 
     class Settings:

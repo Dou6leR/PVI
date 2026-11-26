@@ -3,6 +3,7 @@ from fastapi import Depends
 
 from motor.motor_asyncio import AsyncIOMotorClient
 from beanie import init_beanie
+from sqlalchemy import text
 from sqlmodel import Session, create_engine, SQLModel
 
 from core import settings
@@ -16,7 +17,16 @@ class PostgresHelper:
         self.engine = create_engine(settings.postgres_config.url)
 
     def create_db_and_tables(self):
+        with self.engine.begin() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
         SQLModel.metadata.create_all(self.engine)
+        with self.engine.begin() as conn:
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_rag_chunks_embedding_cosine "
+                    "ON rag_chunks USING hnsw (embedding vector_cosine_ops)"
+                )
+            )
 
     def get_session(self):
         with Session(self.engine) as session:

@@ -414,28 +414,6 @@ async function fetchStudents(page) {
     }
 }
 
-document.querySelector(".sign_out").addEventListener("click", signOut);
-
-async function signOut(event) {
-    try {
-        const response = await fetch("http://localhost:8000/api/v1/student/logout", {
-            method: "POST",
-            headers: {
-                "Authorization": "Basic " + sessionStorage.getItem("credentials"),
-                "Content-Type": "application/json"
-            }
-        });
-        if (response.ok) {
-            const data = await response.json();
-            sessionStorage.removeItem("credentials");
-            sessionStorage.removeItem("studentId");
-            window.location.href = "../index.html";
-        }
-    } catch (error) {
-        console.error("Error during logout", error);
-    }
-}
-
 async function createStudent(student_json) {
     try {
         const response = await fetch("http://localhost:8000/api/v1/student/", {

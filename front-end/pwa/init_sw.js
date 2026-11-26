@@ -1,11 +1,16 @@
-// if ('serviceWorker' in navigator) {
-//     window.addEventListener('load', () => {
-//         navigator.serviceWorker.register('../service-worker.js')
-//         .then(registration => {
-//             console.log('Service Worker registered:', registration);
-//         })
-//         .catch(error => {
-//             console.log('Service Worker registration failed:', error);
-//         });
-//     });
-// }
+// PWA disabled: unregister any active Service Workers and clear Cache Storage
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const registration of registrations) {
+            registration.unregister();
+        }
+    });
+}
+
+if ("caches" in window) {
+    caches.keys().then((names) => {
+        for (const name of names) {
+            caches.delete(name);
+        }
+    });
+}

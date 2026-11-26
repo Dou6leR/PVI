@@ -1,4 +1,21 @@
 var ws;
+
+// Ensure PWA / Service Worker caching is completely disabled and cleared
+if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then((registrations) => {
+        for (const reg of registrations) {
+            reg.unregister();
+        }
+    });
+}
+if ("caches" in window) {
+    caches.keys().then((names) => {
+        for (const name of names) {
+            caches.delete(name);
+        }
+    });
+}
+
 function toggleBellAnimation() {
     const bell = document.querySelector('.bell_badge');
     const badge = document.querySelector('.badge');
@@ -139,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
     }
 
-    let ws = initializeWebSocket(studentId, clientId);
+    ws = initializeWebSocket(studentId, clientId);
 
     document.addEventListener("visibilitychange", () => {
         if (document.visibilityState === "visible" && ws.readyState === WebSocket.CLOSED) {
@@ -147,7 +164,41 @@ document.addEventListener("DOMContentLoaded", () => {
             ws = initializeWebSocket(studentId, clientId);
         }
     });
+
+    const signOutBtn = document.querySelector(".sign_out");
+    if (signOutBtn) {
+        signOutBtn.addEventListener("click", signOut);
+    }
 });
+
+async function signOut(event) {
+    if (event) event.preventDefault();
+    try {
+        const credentials = sessionStorage.getItem("credentials");
+        if (credentials) {
+            await fetch("http://localhost:8000/api/v1/student/logout", {
+                method: "POST",
+                headers: {
+                    "Authorization": "Basic " + credentials,
+                    "Content-Type": "application/json"
+                }
+            });
+        }
+    } catch (error) {
+        console.error("Error during logout", error);
+    } finally {
+        if (typeof ws !== "undefined" && ws) {
+            ws.onclose = null;
+            if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+                ws.close();
+            }
+        }
+        sessionStorage.removeItem("credentials");
+        sessionStorage.removeItem("studentId");
+        sessionStorage.removeItem("myItem");
+        window.location.href = "../index.html";
+    }
+}
 
 function setNotifications(message){
     let val = JSON.parse(sessionStorage.getItem('myItem'));

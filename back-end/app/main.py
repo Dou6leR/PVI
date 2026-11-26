@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import ORJSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -35,6 +35,16 @@ app.add_middleware(
 @app.get("/health", tags=["Health"])
 def health_check():
     return {"status": "ok"}
+
+
+@app.post("/mcp", tags=["MCP"])
+async def mcp_root_endpoint(
+    request: Request,
+    session: postgres_helper.SessionDep
+):
+    from api.v1.ai.mcp_server import handle_mcp_request
+    body = await request.json()
+    return handle_mcp_request(body, session)
 
 
 app.include_router(router=v1_router)

@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="PVI labs" />
-    <link rel="stylesheet" href="../main.css" />
-    <link rel="stylesheet" href="./messages.css" />
+    <link rel="stylesheet" href="../main.css?v=6" />
+    <link rel="stylesheet" href="./messages.css?v=3" />
     <!-- <link rel="manifest" href="../pwa/manifest.json"> -->
     <title>Riznyk Rostyslav</title>
 </head>
@@ -38,7 +38,7 @@
         <div class="sidebar">           
             <a href="../dashboard_page/dashboard.html">Dashboard</a>
             <a href="../students_page/students.html">Students</a>
-            <a href="../tasks_page/tasks.html">Tasks</a>      
+            <a href="../tests_page/tests.html">Tests</a>
         </div>
         <h1>Messages</h1>
         <div class="container">
@@ -53,6 +53,8 @@
                     </div>                
                     <div class="messages"></div>
                     <div class="input-area">
+                        <button id="btn-upload-pdf" class="btn-upload-pdf" title="Завантажити PDF у базу знань предмету">📎 PDF</button>
+                        <input type="file" id="pdf-file-input" accept="application/pdf" style="display: none;" />
                         <input id="input-area-block" type="text" placeholder="Type your message..." />
                         <button id="send-message" class="send-message">&#9658;</button>
                     </div>
@@ -68,8 +70,8 @@
             </div>
         </div>
     </main>
-<script type="text/javascript" src="../app.js"></script>
-<script type="text/javascript" src="./messages.js"></script>
+<script type="text/javascript" src="../app.js?v=5"></script>
+<script type="text/javascript" src="./messages.js?v=4"></script>
 <!-- <script type="text/javascript" src="../pwa/init_sw.js"></script> -->
 </body>
 </html>

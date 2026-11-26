@@ -256,6 +256,15 @@ main {
     width: 230px;
 }
 
+@media only screen and (min-width: 601px) {
+    .sidebar.open ~ .content,
+    .sidebar.open ~ h1,
+    .sidebar.open ~ .container {
+        margin-left: 230px;
+        transition: margin-left 0.3s ease-in-out;
+    }
+}
+
 @media only screen and (max-width: 500px) {
     .sidebar.open {
         width: 100%;

@@ -34,12 +34,16 @@ class WSChat(BaseModel):
 class ChatCreate(BaseModel):
     users: list[int]
     chat_name: str
+    subject: str = ""
+    is_ai: bool = False
 
 
 class ChatResponse(BaseModel):
     id: PydanticObjectId
     users: list[StudentResponse]
     chat_name: str
+    subject: str = ""
+    is_ai: bool = False
     messages: list[MessageResponse]
 
 

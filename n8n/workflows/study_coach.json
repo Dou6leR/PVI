@@ -1,0 +1,208 @@
+{
+  "name": "AI Study Coach (Test Review & Cheat Sheet)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "study-coach",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1111111-2222-3333-4444-555555555501",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "cond-percent-lt-70",
+              "leftValue": "={{ Number($json.body.percent ?? 100) }}",
+              "rightValue": 70,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a1111111-2222-3333-4444-555555555502",
+      "name": "IF Score < 70%",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        440,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst topic = body.topic || 'Навчальна тема';\nconst score = body.score ?? 0;\nconst total = body.total ?? 0;\nconst percent = body.percent ?? 0;\nconst mistakes = body.mistakes || [];\n\nconst mistakesText = mistakes.length > 0\n  ? mistakes.map((m, i) => `${i + 1}. Питання: ${m.question}\\n   Обрано студентом: ${m.user_answer || 'Не обрано'}\\n   Правильно: ${m.correct_answer}`).join('\\n\\n')\n  : 'Помилок не вказано.';\n\nreturn [{\n  json: {\n    coach_mode: 'remedial',\n    ollama_model: body.ollama_model || 'qwen3.5:4b',\n    system_prompt: 'Ти — доброзичливий AI Study Coach університету. Пиши виключно чистою українською мовою у форматі Markdown. Склади структуровану, коротку і практичну шпаргалку для підготовки.',\n    user_prompt: `Студент пройшов тест з теми \"${topic}\" з результатом ${score}/${total} (${percent}%).\\n\\nПитання, де були помилки:\\n${mistakesText}\\n\\nЗавдання:\\n1. Коротко поясни кожну помилку простими словами.\\n2. Склади стислу шпаргалку (ключові тези та правила по цих слабких місцях), щоб студент легко повторив тему.`\n  }\n}];"
+      },
+      "id": "a1111111-2222-3333-4444-555555555503",
+      "name": "Prepare Remedial Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        180
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $input.first().json.body || {};\nconst topic = body.topic || 'Навчальна тема';\nconst score = body.score ?? 0;\nconst total = body.total ?? 0;\nconst percent = body.percent ?? 0;\nconst mistakes = body.mistakes || [];\n\nconst mistakesNote = mistakes.length > 0\n  ? '\\nНевеликі неточності:\\n' + mistakes.map((m, i) => `${i + 1}. ${m.question} -> Правильно: ${m.correct_answer}`).join('\\n')\n  : '';\n\nreturn [{\n  json: {\n    coach_mode: 'advanced',\n    ollama_model: body.ollama_model || 'qwen3.5:4b',\n    system_prompt: 'Ти — AI Study Coach університету. Пиши виключно чистою українською мовою у форматі Markdown.',\n    user_prompt: `Студент чудово пройшов тест з теми \"${topic}\" із результатом ${score}/${total} (${percent}%).${mistakesNote}\\n\\nЗавдання:\\n1. Коротко похвали за гарний результат і зафіксуй 3-4 ключові тези теми у форматі шпаргалки.${mistakes.length > 0 ? '\\n2. Поясни ті дрібні помилки, що трапилися.' : ''}\\n3. Запропонуй 1 цікаве поглиблене питання для самостійного роздуму (без варіантів відповіді, з короткою підказкою).`\n  }\n}];"
+      },
+      "id": "a1111111-2222-3333-4444-555555555504",
+      "name": "Prepare Advanced Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        700,
+        420
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: $json.ollama_model || 'qwen3.5:4b', stream: false, think: false, keep_alive: '5m', messages: [{ role: 'system', content: $json.system_prompt }, { role: 'user', content: $json.user_prompt }], options: { temperature: 0.4, num_ctx: 8192 } }) }}",
+        "options": {
+          "timeout": 120000
+        }
+      },
+      "id": "a1111111-2222-3333-4444-555555555505",
+      "name": "Ollama GPU",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        980,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const webhookBody = $('Webhook Trigger').first().json.body || {};\nconst percent = Number(webhookBody.percent ?? 100);\nconst coachMode = percent < 70 ? 'remedial' : 'advanced';\nconst content = ($input.first().json.message && $input.first().json.message.content) || '';\n\nreturn [{\n  json: {\n    status: 'success',\n    source: `n8n AI Study Coach (${webhookBody.ollama_model || 'qwen3.5:4b'})`,\n    coach_mode: coachMode,\n    study_note_md: content.trim()\n  }\n}];"
+      },
+      "id": "a1111111-2222-3333-4444-555555555506",
+      "name": "Format Coach Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1220,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "a1111111-2222-3333-4444-555555555507",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1450,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "IF Score < 70%",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF Score < 70%": {
+      "main": [
+        [
+          {
+            "node": "Prepare Remedial Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Prepare Advanced Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Remedial Prompt": {
+      "main": [
+        [
+          {
+            "node": "Ollama GPU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Advanced Prompt": {
+      "main": [
+        [
+          {
+            "node": "Ollama GPU",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama GPU": {
+      "main": [
+        [
+          {
+            "node": "Format Coach Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Coach Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

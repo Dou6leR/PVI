@@ -79,7 +79,7 @@ class MessagesService:
     async def get_all_user_chats(cls, user: int, session):
         chats = await Chat.find(In(Chat.users, [user]), fetch_links=True).to_list()
         if not chats:
-            raise HTTPException(status_code=404, detail="Chats not found")
+            return []
         for chat in chats:
             if chat.users:
                 students = [

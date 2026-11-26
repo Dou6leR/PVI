@@ -40,6 +40,18 @@ class ApiV1Prefix(BaseModel):
     prefix: str = "/v1"
     student: str = "/student"
     message: str = "/message"
+    ai: str = "/ai"
+
+
+class AIConfig(BaseModel):
+    provider: str = "auto"  # "auto", "ollama", "gemini"
+    api_key: str = ""
+    model: str = "gemini-3.8-flash"
+    embedding_model: str = "text-embedding-004"
+    ollama_url: str = "http://ollama:11434"
+    ollama_model: str = "qwen3.5:4b"
+    ollama_embedding_model: str = ""
+    enable_mock_fallback: bool = True
 
 
 class ApiPrefix(BaseModel):
@@ -77,6 +89,7 @@ class Settings(BaseSettings):
     api: ApiPrefix = ApiPrefix()
     logger: Logger = Logger()
     security: HTTPBasic = HTTPBasic()
+    ai: AIConfig = AIConfig()
 
 
 settings = Settings()

@@ -14,9 +14,10 @@ router = APIRouter(
 )
 
 
-@router.post("/chat", status_code=201)
-async def create_chat(chat: ChatCreate):
-    await MessagesService.create_chat(chat)
+@router.post("/chat", status_code=201, response_model=ChatResponse)
+async def create_chat(chat: ChatCreate, session: postgres_helper.SessionDep):
+    created = await MessagesService.create_chat(chat)
+    return await MessagesService.get_chat_by_id(created.id, session)
 
 
 @router.post("/new_member/{chat_id}", status_code=201)

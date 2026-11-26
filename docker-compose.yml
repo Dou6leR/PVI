@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: postgres-cms
     restart: unless-stopped
     environment:
@@ -50,6 +50,11 @@ services:
       APP_CONFIG__POSTGRES_CONFIG__URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-7119}@postgres:5432/${POSTGRES_DB:-CMS}
       APP_CONFIG__MONGO_DB__URL: mongodb://mongo:27017
       APP_CONFIG__MONGO_DB__HOST: mongo:27017
+      APP_CONFIG__AI__PROVIDER: ${APP_CONFIG__AI__PROVIDER:-auto}
+      APP_CONFIG__AI__API_KEY: ${APP_CONFIG__AI__API_KEY:-}
+      APP_CONFIG__AI__MODEL: ${APP_CONFIG__AI__MODEL:-gemini-3.8-flash}
+      APP_CONFIG__AI__OLLAMA_URL: ${APP_CONFIG__AI__OLLAMA_URL:-http://ollama:11434}
+      APP_CONFIG__AI__OLLAMA_MODEL: ${APP_CONFIG__AI__OLLAMA_MODEL:-qwen3.5:4b}
     ports:
       - "${BACKEND_HOST_PORT:-8000}:8000"
     healthcheck:
@@ -75,9 +80,70 @@ services:
     networks:
       - cms-network
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin-cms
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@cms.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+    ports:
+      - "${PGADMIN_HOST_PORT:-5050}:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+      - ./pgadmin/servers.json:/pgadmin4/servers.json
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - cms-network
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n-cms
+    restart: unless-stopped
+    ports:
+      - "${N8N_HOST_PORT:-5678}:5678"
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_DIAGNOSTICS_ENABLED=false
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/data/workflows
+    networks:
+      - cms-network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama-cms
+    restart: unless-stopped
+    ports:
+      - "${OLLAMA_HOST_PORT:-11434}:11434"
+    environment:
+      - OLLAMA_KEEP_ALIVE=5m
+      - OLLAMA_FLASH_ATTENTION=1
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - cms-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
 volumes:
   postgres_data:
   mongo_data:
+  pgadmin_data:
+  n8n_data:
+  ollama_data:
 
 networks:
   cms-network:
