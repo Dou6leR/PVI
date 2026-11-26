@@ -46,7 +46,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: back-end
-        run: uv pip install --system -r pyproject.toml --extra dev
+        run: uv venv && uv pip install -r pyproject.toml --extra dev
 
       - name: Run pytest suite
         working-directory: back-end
@@ -58,7 +58,7 @@ jobs:
           APP_CONFIG__AI__PROVIDER: auto
           APP_CONFIG__AI__API_KEY: ""
           APP_CONFIG__AI__OLLAMA_URL: http://127.0.0.1:11499
-        run: pytest tests -v
+        run: .venv/bin/pytest tests -v
 
   config-and-frontend-checks:
     name: Docker Compose, n8n & Frontend Integrity
