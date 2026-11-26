@@ -1,3 +1,4 @@
+import json
 from typing import Any
 from sqlmodel import Session
 from api.v1.ai.tools import (
@@ -43,28 +44,45 @@ MCP_TOOLS = [
         }
     },
     {
+        "name": "list_student_documents",
+        "description": "List private PDF/text documents indexed in PostgreSQL pgvector RAG for a specific student and optional chat.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "student_id": {"type": "integer", "description": "Owner student ID"},
+                "chat_id": {"type": "string", "description": "Optional MongoDB chat ID filter"},
+                "subject": {"type": "string", "description": "Optional subject filter"}
+            },
+            "required": ["student_id"]
+        }
+    },
+    {
         "name": "query_subject_knowledge",
-        "description": "Perform RAG vector similarity search across uploaded PDF materials and course guidelines.",
+        "description": "Perform PostgreSQL pgvector similarity search across a student's private uploaded PDF materials.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "Search question or keywords"},
-                "subject": {"type": "string", "description": "Course/subject filter, e.g. ПВІ"}
+                "student_id": {"type": "integer", "description": "Owner student ID"},
+                "chat_id": {"type": "string", "description": "Optional MongoDB chat ID filter"},
+                "subject": {"type": "string", "description": "Optional subject filter"}
             },
-            "required": ["query"]
+            "required": ["query", "student_id"]
         }
     },
     {
         "name": "add_knowledge",
-        "description": "Add a new knowledge note or rule to the RAG vector store.",
+        "description": "Add a new private knowledge note to PostgreSQL pgvector RAG for a specific student.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "subject": {"type": "string", "description": "Subject title"},
-                "title": {"type": "string", "description": "Document/rule title"},
-                "content": {"type": "string", "description": "Rule content"}
+                "student_id": {"type": "integer", "description": "Owner student ID"},
+                "title": {"type": "string", "description": "Document/note title"},
+                "content": {"type": "string", "description": "Note content"},
+                "chat_id": {"type": "string", "description": "Optional chat ID (defaults to 'default')"},
+                "subject": {"type": "string", "description": "Optional subject title"}
             },
-            "required": ["subject", "title", "content"]
+            "required": ["student_id", "title", "content"]
         }
     }
 ]
@@ -100,13 +118,35 @@ def handle_mcp_request(payload: dict, session: Session) -> dict:
             result_data = tool_get_group_students(arguments.get("group", ""), session)
         elif tool_name == "get_system_stats":
             result_data = tool_get_system_stats(session)
+        elif tool_name == "list_student_documents":
+            student_id = arguments.get("student_id")
+            if student_id is None:
+                result_data = {"error": "student_id is required"}
+            else:
+                result_data = rag_store.list_documents(
+                    subject=arguments.get("subject"),
+                    student_id=int(student_id),
+                    chat_id=arguments.get("chat_id"),
+                )
         elif tool_name == "query_subject_knowledge":
-            result_data = tool_query_subject_knowledge(arguments.get("query", ""), arguments.get("subject"))
+            student_id = arguments.get("student_id")
+            if student_id is None:
+                result_data = {"error": "student_id is required"}
+            else:
+                result_data = tool_query_subject_knowledge(
+                    query=arguments.get("query", ""),
+                    subject=arguments.get("subject"),
+                    student_id=int(student_id),
+                    chat_id=arguments.get("chat_id"),
+                )
         elif tool_name == "add_knowledge":
+            student_id = arguments.get("student_id")
             result_data = tool_add_knowledge(
-                arguments.get("subject", "Загальний"),
-                arguments.get("title", "Note"),
-                arguments.get("content", "")
+                subject=arguments.get("subject", ""),
+                title=arguments.get("title", "Note"),
+                content=arguments.get("content", ""),
+                student_id=int(student_id) if student_id is not None else None,
+                chat_id=arguments.get("chat_id", "default"),
             )
         else:
             return {
@@ -125,19 +165,25 @@ def handle_mcp_request(payload: dict, session: Session) -> dict:
                 "content": [
                     {
                         "type": "text",
-                        "text": str(result_data)
+                        "text": json.dumps(result_data, ensure_ascii=False)
                     }
                 ]
             }
         }
 
     elif method == "resources/list":
-        docs = rag_store.list_documents()
+        student_id = params.get("student_id")
+        chat_id = params.get("chat_id")
+        docs = (
+            rag_store.list_documents(student_id=int(student_id), chat_id=chat_id)
+            if student_id is not None
+            else []
+        )
         resources = [
             {
-                "uri": f"cms://rag/{d['subject']}/{d['filename']}",
-                "name": f"{d['filename']} ({d['subject']})",
-                "description": f"Indexed course materials ({d['chunks_count']} chunks)"
+                "uri": f"cms://rag/{student_id}/{d['chat_id']}/{d['filename']}",
+                "name": f"{d['filename']}" + (f" ({d['subject']})" if d.get("subject") else ""),
+                "description": f"Indexed material ({d['chunks_count']} chunks)"
             }
             for d in docs
         ]
@@ -149,7 +195,6 @@ def handle_mcp_request(payload: dict, session: Session) -> dict:
             }
         }
 
-    # Ping / initialize
     elif method == "initialize":
         return {
             "jsonrpc": "2.0",
@@ -162,7 +207,7 @@ def handle_mcp_request(payload: dict, session: Session) -> dict:
                 },
                 "serverInfo": {
                     "name": "cms-mcp-server",
-                    "version": "1.0.0"
+                    "version": "1.1.0"
                 }
             }
         }

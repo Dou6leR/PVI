@@ -92,20 +92,30 @@ def tool_query_subject_knowledge(query: str, subject: str = None, student_id: in
         return [{"error": str(e)}]
 
 
-def tool_add_knowledge(subject: str, title: str, content: str, student_id: int = None) -> dict:
+def tool_add_knowledge(subject: str, title: str, content: str, student_id: int = None, chat_id: str = "default") -> dict:
     """
-    Saves a new fact or rule directly into the RAG knowledge base from the conversation.
+    Saves a new fact or rule directly into the PostgreSQL pgvector RAG knowledge base for the student.
     """
+    if student_id is None:
+        return {"error": "student_id is required to save private knowledge"}
     try:
-        rag_store.add_chunk(
-            subject=subject,
-            chat_id="chat-memory",
+        row = rag_store.add_chunk(
+            subject=subject or "",
+            chat_id=chat_id or "default",
             filename=f"{title}.txt",
             page=1,
             text=content,
-            student_id=student_id
+            student_id=int(student_id)
         )
-        return {"status": "success", "message": f"Saved '{title}' for subject '{subject}' in knowledge base."}
+        if not row:
+            return {"error": "Failed to store knowledge chunk"}
+        return {
+            "status": "success",
+            "id": row.id,
+            "student_id": int(student_id),
+            "chat_id": chat_id or "default",
+            "message": f"Saved '{title}' in PostgreSQL pgvector knowledge base for student_id={student_id}."
+        }
     except Exception as e:
         logger.error(f"Error in tool_add_knowledge: {e}")
         return {"error": str(e)}

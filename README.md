@@ -122,13 +122,72 @@ docker compose exec postgres psql -U postgres -d CMS -c "SELECT id, first_name, 
 * **Swagger API Docs:** [http://localhost:8000/docs](http://localhost:8000/docs)
 * **AI Status (активна модель, кількість RAG-фрагментів):** [http://localhost:8000/api/v1/ai/status](http://localhost:8000/api/v1/ai/status)
 * **Health Check:** [http://localhost:8000/health](http://localhost:8000/health)
-* **MCP Server:** `http://localhost:8000/mcp`
+* **MCP Server:** `POST http://localhost:8000/mcp` (та `/api/v1/ai/mcp`)
 * **pgAdmin (PostgreSQL GUI):** [http://localhost:5050](http://localhost:5050) (`admin@cms.com` / `admin`)
 * **n8n Workflows:** [http://localhost:5678](http://localhost:5678)
 
 ---
 
-## 5. Корисні команди керування
+## 5. Документація до MCP-сервера (Model Context Protocol)
+
+Система надає JSON-RPC 2.0 MCP-сервер (`cms-mcp-server v1.1.0`, `protocolVersion: 2024-11-05`) у [mcp_server.py](back-end/app/api/v1/ai/mcp_server.py), через який зовнішні AI-клієнти (Cursor, Claude Desktop, власні агенти) можуть звертатися до PostgreSQL та приватної бази знань RAG.
+
+* **URL:** `POST http://localhost:8000/mcp` (або `POST http://localhost:8000/api/v1/ai/mcp`)
+* **Формат:** `Content-Type: application/json`, JSON-RPC 2.0
+
+### Підтримувані методи
+
+| Метод | Призначення |
+| :--- | :--- |
+| `initialize` | Повертає версію протоколу (`2024-11-05`) та можливості сервера (`tools`, `resources`) |
+| `tools/list` | Повертає JSON-схеми всіх 6 зареєстрованих інструментів |
+| `tools/call` | Викликає вибраний інструмент (`params.name` + `params.arguments`) |
+| `resources/list` | Повертає список PDF/текстових документів користувача у форматі `cms://rag/{student_id}/{chat_id}/{filename}` (приймає `params.student_id` та опціонально `params.chat_id`) |
+
+### Доступні інструменти (`tools/call`)
+
+| Інструмент | Обов'язкові параметри | Опціональні параметри | Опис |
+| :--- | :--- | :--- | :--- |
+| `search_students` | `name_or_query` | — | Пошук студентів у PostgreSQL по імені, прізвищу або групі |
+| `get_group_students` | `group` | — | Список усіх студентів групи (напр., `PZ-22`) з онлайн-статусом |
+| `get_system_stats` | — | — | Статистика системи: всього студентів, онлайн та розподіл по групах |
+| `list_student_documents` | `student_id` | `chat_id`, `subject` | Список документів студента в PostgreSQL `pgvector` RAG |
+| `query_subject_knowledge` | `query`, `student_id` | `chat_id`, `subject` | Векторний пошук по приватних матеріалах студента в `pgvector` |
+| `add_knowledge` | `student_id`, `title`, `content` | `chat_id`, `subject` | Додавання приватної текстової нотатки до `rag_chunks` (`pgvector`) |
+
+### Приклади запитів
+
+**Отримати список інструментів (`tools/list`):**
+```bash
+curl -X POST http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```
+
+**Викликати статистику студентів (`get_system_stats`):**
+```bash
+curl -X POST http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"get_system_stats","arguments":{}}}'
+```
+
+**Пошук по приватних PDF студента (`query_subject_knowledge`):**
+```bash
+curl -X POST http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query_subject_knowledge","arguments":{"query":"архітектура","student_id":1}}}'
+```
+
+**Список MCP-ресурсів студента (`resources/list`):**
+```bash
+curl -X POST http://localhost:8000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":4,"method":"resources/list","params":{"student_id":1}}'
+```
+
+---
+
+## 6. Корисні команди керування
 
 ```bash
 # Перевірити, чи модель завантажена на GPU
@@ -146,7 +205,7 @@ docker compose down -v
 
 ---
 
-## 6. Структура репозиторію
+## 7. Структура репозиторію
 
 ```text
 ├── docker-compose.yml          # Опис усіх 7 Docker-сервісів і volumes
